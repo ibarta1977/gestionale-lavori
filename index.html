@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionale Lavori ⚡</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --warning: #ffc107; --dark: #343a40; --lilla: #e0d7f7; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
+        .main-container { max-width: 600px; margin: 0 auto; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 5px solid var(--primary); }
+        .flex-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        input, button { padding: 12px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-green { background: var(--success); }
+        .btn-gray { background: #6c757d; }
+        .btn-red { background: var(--danger); }
+        .btn-yellow { background: var(--warning); color: #333 !important; }
+        .hidden { display: none; }
+        .totali-box { background: var(--lilla); color: #4a148c; padding: 12px; border-radius: 10px; display: flex; justify-content: space-around; margin: 10px 0; font-weight: bold; border: 1px solid #b39ddb; }
+        .table-wrapper { border-radius: 12px; overflow: hidden; border: 1px solid #ddd; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px 5px; text-align: left; }
+        th { background: #f8f9fa; }
+        .col-data { width: 85px; }
+        .col-small { width: 45px; text-align: center; }
+        .col-azioni { width: 70px; text-align: center; }
+        .check-delete { transform: scale(1.5); margin-right: 15px; }
+        
+        /* Griglia pulsanti Home - COLORATA E GRANDE */
+.main-actions-grid { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 8px; 
+    margin-top: 15px; 
+    margin-bottom: 15px; 
+}
+
+.btn-nav { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 20px 2px; /* Molto alto per il touch */
+    border: none; 
+    border-radius: 8px; 
+    color: white !important; 
+    cursor: pointer; 
+    font-size: 14px; /* Testo bello grande */
+    font-weight: 900; /* Extra grassetto */
+    text-transform: uppercase;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Colori specifici richiesti */
+.btn-nuovo { background: #004085 !important; }    /* Blu Scuro */
+.btn-elimina { background: #dc3545 !important; }  /* Rosso */
+.btn-backup { background: #198754 !important; }   /* Verde */
+.btn-ripristina { background: #d39e00 !important; } /* Giallo Scuro/Ocra */
+
+#loading { text-align: center; padding: 20px; font-weight: bold; color: #004085; }
+
+@media print {
+    /* 1. Nascondiamo tutto il superfluo */
+    body { background: white !important; padding: 0; }
+    body * { visibility: hidden; }
+    #dettaglio-cliente, #dettaglio-cliente * { visibility: visible; }
+    
+    /* 2. Pulizia totale della "Card" */
+    #dettaglio-cliente { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        box-shadow: none !important; 
+        border: none !important; 
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .card { 
+        border: none !important; 
+        box-shadow: none !important; 
+        background: white !important; 
+        padding: 0 !important; 
+        margin-bottom: 20px !important;
+    }
+
+    /* 3. COSA NASCONDERE: Ho tolto .totali-box da qui! */
+    button, 
+    input, 
+    .flex-row, 
+    h3#titolo-nota, 
+    #btn-nota,
+    #btn-annulla-nota,
+    .col-azioni, 
+    th:last-child, 
+    td:last-child { 
+        display: none !important; 
+    }
+
+    /* 4. RENDIAMO I TOTALI CHIARI SUL PDF */
+    .totali-box {
+        display: flex !important;
+        visibility: visible !important;
+        justify-content: space-around !important;
+        background: #f8f9fa !important; /* Grigio chiarissimo per distinguerli */
+        border: 1px solid #333 !important;
+        color: black !important;
+        margin: 15px 0 !important;
+        padding: 10px !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* 5. TABELLA NERA SU BIANCO */
+    table { 
+        width: 100%; 
+        border-collapse: collapse !important; 
+        margin-top: 10px;
+    }
+    th, td { 
+        border: 1px solid #333 !important; 
+        padding: 8px !important; 
+        color: black !important;
+    }
+    th { background: #eee !important; -webkit-print-color-adjust: exact; }
+
+    /* 6. Intestazione */
+    #view-titolo { font-size: 24pt; color: black !important; margin-bottom: 5px; }
+    #view-anagrafica { font-size: 12pt; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+}    
+
+</style>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#007bff">
+</head>
+<body>
+
+<div class="main-container">
+    <div id="view-login" class="card">
+        <h2 style="text-align: center;">Accedi al Gestionale</h2>
+        <input type="email" id="login-email" placeholder="Email">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button onclick="login()">ACCEDI</button>
+        <p id="login-error" style="color:red; font-size:12px; text-align:center;"></p>
+    </div>
+
+    <div id="loading" class="hidden">Sincronizzazione Cloud...</div>
+
+    <div id="lista-clienti" class="hidden">
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <h2 style="margin:0;">⚡ Gestionale</h2>
+            <button class="btn-red" style="width:auto; padding:5px 10px; font-size:12px;" onclick="logout()">LOGOUT</button>
+        </div>
+
+        <div class="main-actions-grid" style="margin-top:15px;">
+    <button onclick="preparaNuovo()" class="btn-nav btn-nuovo">NUOVO</button>
+    <button id="btn-modalita-elimina" onclick="toggleModalitaElimina()" class="btn-nav btn-elimina">ELIMINA</button>
+    <button onclick="esportaBackup()" class="btn-nav btn-backup">BACKUP</button>
+    <button onclick="document.getElementById('input-ripristino').click()" class="btn-nav btn-ripristina">RIPRISTINA</button>
+    <input type="file" id="input-ripristino" style="display:none" onchange="importaBackup(event)">
+</div>
+
+        <button id="btn-conferma-elimina" class="btn-red hidden" style="background:#8b0000; width: 100%; margin-bottom: 10px;" onclick="eliminaSelezionati()">⚠️ CONFERMA CANCELLAZIONE</button>
+
+        <div class="card" style="border-left-color: #6c757d; padding: 10px;">
+            <input type="text" id="cercaInput" placeholder="🔍 Cerca Cognome o Città..." onkeyup="filtraClienti()" style="margin:0">
+        </div>
+        <div id="container-clienti"></div>
+    </div>
+
+    <div id="form-cliente" class="hidden">
+        <div class="card">
+            <h3 id="form-titolo">📝 Anagrafica</h3>
+            <input type="text" id="titoloLavoro" placeholder="Titolo Lavoro">
+            <input type="text" id="cognome" placeholder="Cognome *">
+            <input type="text" id="nome" placeholder="Nome">
+            <input type="text" id="indirizzo" placeholder="Indirizzo">
+            <input type="text" id="citta" placeholder="Città">
+            <input type="text" id="telefono" placeholder="Telefono">
+            <button class="btn-green" onclick="salvaCliente()">✅ SALVA NEL CLOUD</button>
+            <button class="btn-gray" onclick="tornaAllaLista()">❌ ANNULLA</button>
+        </div>
+    </div>
+
+    <div id="dettaglio-cliente" class="hidden">
+        <div class="card">
+            <h2 id="view-titolo" style="margin:0; color:var(--primary);"></h2>
+            <p id="view-anagrafica"></p>
+            <div class="flex-row">
+                <button class="btn-gray" onclick="tornaAllaLista()">🏠 HOME</button>
+                <button class="btn-gray" onclick="preparaModifica()">✏️ MODIFICA</button>
+                <button class="btn-red" onclick="eliminaClienteSingolo()">🗑️ ELIMINA</button>
+                <button class="btn-green" onclick="window.print()">🖨️ PDF</button>
+            </div>
+        </div>
+        
+        <div class="card" style="border-left-color: var(--warning);">
+            <h3 id="titolo-nota" style="margin:0; font-size:1em;">➕ Nota</h3>
+            <input type="date" id="nota-data">
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="nota-ore" placeholder="Ore">
+                <input type="number" id="nota-costi" placeholder="€ Costi">
+            </div>
+            <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
+            <button id="btn-nota" class="btn-green" onclick="salvaNota()">➕ AGGIUNGI</button>
+            <button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()">ANNULLA</button>
+        </div>
+
+        <div class="card" style="border-left-color: var(--success);">
+            <h3>📖 Diario Lavori</h3>
+            <div class="totali-box">
+                <div>Ore: <span id="tot-ore">0</span></div>
+                <div>Costi: <span id="tot-costi">0</span> €</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th class="col-data">Data</th><th class="col-small">H</th><th class="col-small">€</th><th>Note</th><th class="col-azioni">Az</th></tr></thead>
+                    <tbody id="corpo-diario"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // Avviso se si tenta di uscire o ricaricare (Refresh o Tasto Indietro)
+window.onbeforeunload = function(e) {
+    if (!navigator.onLine) {
+        const messaggio = "Attenzione: sei offline! Se esci ora o ricarichi, i dati non sincronizzati andranno persi.";
+        e.returnValue = messaggio; // Per alcuni browser
+        return messaggio; // Per altri
+    }
+};
+
+// CONFIGURAZIONE FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyDrJrwcJDrVUbkBaqswda11yHzh9YgDSkY",
+        authDomain: "gestionale-lavori-476a4.firebaseapp.com",
+        projectId: "gestionale-lavori-476a4",
+        storageBucket: "gestionale-lavori-476a4.firebasestorage.app",
+        messagingSenderId: "85609674644",
+        databaseURL: "https://gestionale-lavori-476a4-default-rtdb.europe-west1.firebasedatabase.app",
+        appId: "1:85609674644:web:fce47580bcc20033a80181"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+// Abilita la persistenza offline (funziona solo su database compat)
+// Nota: Firebase Realtime DB gestisce internamente una cache temporanea.
+
+
+    let clienti = [];
+
+// --- AGGIUNTA CACHE LOCALE ALL'AVVIO ---
+const cacheSalvata = localStorage.getItem('cache_clienti_globali');
+if (cacheSalvata) {
+    clienti = JSON.parse(cacheSalvata);
+    console.log("Dati caricati dalla memoria locale (Offline-ready)");
+    // Mostriamo subito i dati vecchi mentre aspettiamo il cloud
+    setTimeout(() => { renderLista(clienti); }, 100);
+}
+// ---------------------------------------
+    let clienteAttivoIdx = null;
+    let modoModificaCliente = false;
+    let rigaDiarioModificaIdx = null;
+    let modalitaElimina = false;
+
+    // LOGIN / LOGOUT (VERSIONE CORRETTA PER OFFLINE)
+    auth.onAuthStateChanged(user => {
+        const haDatiInCache = localStorage.getItem('cache_clienti_globali');
+
+        if (user) {
+            // 1. ONLINE E LOGGATO
+            console.log("Utente Online");
+            switchView('lista-clienti');
+            ascoltaDatiCloud();
+        } else {
+            // 2. OFFLINE O APP APPENA RIAPERTA
+            if (haDatiInCache) {
+                console.log("Riapertura con dati in cache");
+                
+                // --- FIX: Se la variabile 'clienti' è vuota, riempila subito! ---
+                if (clienti.length === 0) {
+                    clienti = JSON.parse(haDatiInCache);
+                }
+                
+                switchView('lista-clienti');
+                renderLista(clienti);
+
+                if (navigator.onLine) {
+                    ascoltaDatiCloud();
+                }
+            } else {
+                // 3. NESSUN DATO E NESSUN UTENTE
+                switchView('view-login');
+            }
+        }
+    });
+
+    function login() {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Errore: " + err.message));
+    }
+    function logout() { 
+    if(confirm("Vuoi uscire? La cache locale verrà svuotata.")) {
+        localStorage.removeItem('cache_clienti_globali'); // Pulizia sicurezza
+        auth.signOut(); 
+    }
+}
+
+    // DATABASE CLOUD
+   function ascoltaDatiCloud() {
+    const loadingEl = document.getElementById('loading');
+    loadingEl.classList.remove('hidden');
+
+    // Usiamo onAuthStateChanged per essere SICURI di avere l'utente prima di chiedere i dati
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log("Sincronizzazione con UID:", user.uid);
+            db.ref('clienti_globali/' + user.uid).on('value', snapshot => {
+                const data = snapshot.val();
+                clienti = data ? Object.values(data) : [];
+                localStorage.setItem('cache_clienti_globali', JSON.stringify(clienti));
+                renderLista(clienti);
+                loadingEl.classList.add('hidden');
+            }, err => {
+                console.error("Errore database:", err.message);
+                loadingEl.classList.add('hidden');
+            });
+        } else {
+            loadingEl.classList.add('hidden');
+            switchView('view-login');
+        }
+    });
+}
+
+    // MODIFICATA: Più robusta
+function salvaSuCloud() {
+    const user = auth.currentUser;
+    
+    // 1. Salvataggio locale immediato (fondamentale!)
+    localStorage.setItem('cache_clienti_globali', JSON.stringify(clienti));
+    renderLista(clienti); // Aggiorna subito la UI senza aspettare il cloud
+
+    // 2. Se siamo online e loggati, spingiamo sul cloud
+    if (user && navigator.onLine) {
+        db.ref('clienti_globali/' + user.uid).set(clienti)
+            .then(() => console.log("Cloud aggiornato"))
+            .catch(err => console.warn("Errore cloud (ma salvato in locale):", err));
+    } else {
+        console.log("Salvato solo in locale (Offline)");
+    }
+}
+
+    // VISUALIZZAZIONE LISTA
+    function renderLista(datiDaMostrare) {
+        const container = document.getElementById('container-clienti');
+        container.innerHTML = "";
+        const lista = datiDaMostrare || clienti;
+
+        if (lista.length === 0) {
+            container.innerHTML = "<p style='text-align:center; padding:20px; color:gray;'>Nessun cliente trovato.</p>";
+            return;
+        }
+
+        lista.forEach((c) => {
+            // Troviamo l'indice reale nell'array originale per i bottoni
+            const indexOriginale = clienti.indexOf(c);
+            const div = document.createElement('div');
+            div.className = 'card cliente-item';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center; justify-content: flex-start; text-align: left; gap: 10px;">
+            <input type="checkbox" class="check-delete ${modalitaElimina ? '' : 'hidden'}" 
+                   data-index="${indexOriginale}" 
+                   style="width: 25px; height: 25px; margin: 0; flex-shrink: 0;">
+            
+            <div style="flex-grow: 1;">
+                <strong style="font-size: 1.1em;">${c.cognome.toUpperCase()} ${c.nome}</strong><br>
+                <small style="color: #666;">${c.titolo} - ${c.citta}</small>
+            </div>
+
+            <button class="btn-green ${modalitaElimina ? 'hidden' : ''}" 
+                    style="width:auto; padding:8px 15px; flex-shrink: 0;" 
+                    onclick="apriCliente(${indexOriginale})">APRI</button>
+        </div>`;
+            container.appendChild(div);
+        });
+    }
+
+    // GESTIONE CLIENTI
+    function salvaCliente() {
+        const cognome = document.getElementById('cognome').value;
+        if(!cognome) return alert("Cognome obbligatorio!");
+        const dati = {
+            id: modoModificaCliente ? (clienti[clienteAttivoIdx].id || Date.now()) : Date.now(),
+            titolo: document.getElementById('titoloLavoro').value || "Lavoro",
+            cognome: cognome,
+            nome: document.getElementById('nome').value || "",
+            indirizzo: document.getElementById('indirizzo').value || "",
+            citta: document.getElementById('citta').value || "",
+            telefono: document.getElementById('telefono').value || "",
+            diario: modoModificaCliente ? (clienti[clienteAttivoIdx].diario || []) : []
+        };
+        if(modoModificaCliente) clienti[clienteAttivoIdx] = dati;
+        else clienti.push(dati);
+        salvaSuCloud(); tornaAllaLista();
+    }
+
+    function apriCliente(index) {
+        clienteAttivoIdx = index;
+        const c = clienti[index];
+        document.getElementById('view-titolo').innerText = c.titolo;
+        document.getElementById('view-anagrafica').innerHTML = `<strong>${c.cognome} ${c.nome}</strong> | ${c.citta} | Tel: ${c.telefono}`;
+        resetFormNota(); renderDiario(); switchView('dettaglio-cliente');
+	// AGGIUNTA: Crea il "gradino" per il tasto indietro
+    	window.history.pushState(null, null, window.location.href);
+    }
+
+    // DIARIO NOTA
+    function salvaNota() {
+        const data = document.getElementById('nota-data').value;
+        const ore = parseFloat(document.getElementById('nota-ore').value) || 0;
+        const costi = parseFloat(document.getElementById('nota-costi').value) || 0;
+        const note = document.getElementById('nota-testo').value || "";
+        if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+        if(rigaDiarioModificaIdx !== null) clienti[clienteAttivoIdx].diario[rigaDiarioModificaIdx] = {data, ore, costi, note};
+        else clienti[clienteAttivoIdx].diario.push({data, ore, costi, note});
+        salvaSuCloud(); resetFormNota(); renderDiario();
+    }
+
+    function renderDiario() {
+        const d = (clienti[clienteAttivoIdx] && clienti[clienteAttivoIdx].diario) ? clienti[clienteAttivoIdx].diario : [];
+        const corpo = document.getElementById('corpo-diario');
+        corpo.innerHTML = ''; let hT = 0, cT = 0;
+        const dSorted = [...d].sort((a,b) => new Date(b.data) - new Date(a.data));
+        dSorted.forEach((r) => {
+            hT += r.ore; cT += r.costi;
+            let dataF = r.data ? r.data.split('-').reverse().join('/') : '---';
+            const originalIdx = d.indexOf(r);
+            corpo.innerHTML += `<tr><td>${dataF}</td><td>${r.ore}</td><td>${r.costi}</td><td>${r.note}</td>
+                <td class="col-azioni">
+                    <button class="btn-yellow" style="padding:2px 5px;" onclick="preparaModificaNota(${originalIdx})">✏️</button>
+                    <button class="btn-red" style="padding:2px 5px;" onclick="eliminaNota(${originalIdx})">🗑️</button>
+                </td></tr>`;
+        });
+        document.getElementById('tot-ore').innerText = hT;
+        document.getElementById('tot-costi').innerText = cT.toFixed(2);
+    }
+
+    function eliminaNota(idx) {
+        if(confirm("Eliminare questa riga?")) { 
+            clienti[clienteAttivoIdx].diario.splice(idx, 1); 
+            salvaSuCloud(); renderDiario(); 
+        }
+    }
+
+    // ELIMINAZIONE MULTIPLA
+    function toggleModalitaElimina() {
+    modalitaElimina = !modalitaElimina;
+    
+    // Mostra/Nasconde il tastone di conferma finale
+    const btnConferma = document.getElementById('btn-conferma-elimina');
+    btnConferma.classList.toggle('hidden');
+    
+    // Gestisce il tasto ELIMINA/ANNULLA nella griglia
+    const btnMain = document.getElementById('btn-modalita-elimina');
+    
+    if (modalitaElimina) {
+        btnMain.innerText = "ANNULLA";
+        // Opzionale: puoi cambiare colore in grigio quando è in modalità annulla
+        btnMain.style.background = "#6c757d"; 
+    } else {
+        btnMain.innerText = "ELIMINA";
+        btnMain.style.background = "#dc3545"; // Torna rosso
+    }
+    
+    renderLista(); // Ricarica la lista per mostrare le checkbox
+}
+
+    function eliminaSelezionati() {
+        const checkboxes = document.querySelectorAll('.check-delete:checked');
+        if (checkboxes.length === 0) return alert("Seleziona almeno un cliente");
+        if (confirm("Eliminare i selezionati?")) {
+            const indici = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a,b)=>b-a);
+            indici.forEach(idx => clienti.splice(idx, 1));
+            salvaSuCloud(); toggleModalitaElimina();
+        }
+    }
+
+    function eliminaClienteSingolo() {
+        if(confirm("Eliminare definitivamente il cliente?")) {
+            clienti.splice(clienteAttivoIdx, 1); salvaSuCloud(); tornaAllaLista();
+        }
+    }
+
+    // UTILI & NAVIGAZIONE
+    function switchView(id) {
+        ['view-login', 'lista-clienti', 'form-cliente', 'dettaglio-cliente'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function tornaAllaLista() { clienteAttivoIdx = null; switchView('lista-clienti'); }
+    function preparaNuovo() { 
+    modoModificaCliente = false; 
+    document.querySelectorAll('#form-cliente input').forEach(i => i.value = ''); 
+    switchView('form-cliente'); 
+    
+    // AGGIUNTA: Crea il "gradino" per il tasto indietro
+    window.history.pushState(null, null, window.location.href);
+}
+    function preparaModifica() { modoModificaCliente = true; const c = clienti[clienteAttivoIdx]; document.getElementById('titoloLavoro').value = c.titolo; document.getElementById('cognome').value = c.cognome; document.getElementById('nome').value = c.nome; document.getElementById('indirizzo').value = c.indirizzo; document.getElementById('citta').value = c.citta; document.getElementById('telefono').value = c.telefono; switchView('form-cliente'); }
+    function resetFormNota() { rigaDiarioModificaIdx = null; document.getElementById('nota-data').valueAsDate = new Date(); document.querySelectorAll('#nota-ore, #nota-costi, #nota-testo').forEach(i => i.value = ''); document.getElementById('btn-nota').innerText = "➕ AGGIUNGI"; document.getElementById('btn-annulla-nota').classList.add('hidden'); }
+    function preparaModificaNota(idx) { const r = clienti[clienteAttivoIdx].diario[idx]; rigaDiarioModificaIdx = idx; document.getElementById('nota-data').value = r.data; document.getElementById('nota-ore').value = r.ore; document.getElementById('nota-costi').value = r.costi; document.getElementById('nota-testo').value = r.note; document.getElementById('btn-nota').innerText = "AGGIORNA"; document.getElementById('btn-annulla-nota').classList.remove('hidden'); }
+
+    // NUOVE FUNZIONI: RICERCA E RIPRISTINO
+    function filtraClienti() {
+        const query = document.getElementById('cercaInput').value.toLowerCase();
+        const filtrati = clienti.filter(c => 
+            (c.cognome && c.cognome.toLowerCase().includes(query)) || 
+            (c.citta && c.citta.toLowerCase().includes(query))
+        );
+        renderLista(filtrati);
+    }
+
+    function esportaBackup() {
+        const blob = new Blob([JSON.stringify(clienti)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `backup_lavori_${new Date().toLocaleDateString()}.json`; a.click();
+    }
+
+    function importaBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const dati = JSON.parse(e.target.result);
+                if (Array.isArray(dati) && confirm("Sovrascrivere il Cloud con questo backup?")) {
+                    clienti = dati; salvaSuCloud(); renderLista(); alert("Ripristino completato!");
+                }
+            } catch (err) { alert("File non valido"); }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // SERVICE WORKER (PWA)
+    if ('serviceWorker' in navigator) { 
+        navigator.serviceWorker.register('sw.js'); 
+    }
+
+    // Forza la sincronizzazione quando torna il segnale internet
+    window.addEventListener('online', () => {
+        console.log("Connessione ripristinata! Aggiorno i dati...");
+        ascoltaDatiCloud(); 
+    });
+
+    window.addEventListener('offline', () => {
+        console.log("Sei passato in modalità offline.");
+    });
+
+// 1. GESTIONE TASTO INDIETRO CON AVVISO BLOCCANTE
+window.history.pushState(null, null, window.location.href);
+window.onpopstate = function() {
+    if (document.getElementById('lista-clienti').classList.contains('hidden')) {
+        // Se sei dentro un cliente, torna alla lista
+        tornaAllaLista();
+        window.history.pushState(null, null, window.location.href);
+    } else {
+        // Se sei nella lista e premi INDIETRO
+        if (!navigator.onLine) {
+            // L'alert ferma il browser e dà tempo allo script di respirare
+            alert("⚠️ ATTENZIONE: Sei OFFLINE. Per non perdere i dati usa il tasto HOME (quello centrale) per uscire!");
+            window.history.pushState(null, null, window.location.href);
+        } else {
+            // Se sei online, permetti l'uscita o rimani (scelta tua)
+            window.history.pushState(null, null, window.location.href);
+        }
+    }
+};
+
+// 2. SALVATAGGIO DISPERATO (Corretto con UID)
+document.addEventListener("visibilitychange", function() {
+    // Salviamo SEMPRE quando l'app non è più visibile
+   if (document.visibilityState === 'hidden') {
+        const user = firebase.auth().currentUser; // <-- Aggiungi questo
+        localStorage.setItem('cache_clienti_globali', JSON.stringify(clienti));
+        
+        // Se c'è rete, tentiamo il cloud, altrimenti Firebase ci proverà al rientro
+        if (navigator.onLine && user) {
+            // AGGIUNTO IL PERCORSO CORRETTO
+            db.ref('clienti_globali/' + user.uid).set(clienti);
+        }
+    }
+});
+
+// 3. Protezione Refresh
+window.onbeforeunload = function(e) {
+    if (!navigator.onLine) {
+        const msg = "Sei offline! Uscendo perderai i dati non salvati.";
+        e.returnValue = msg;
+        return msg;
+    }
+};
+
+</script>
+
+</body>
+</html>
