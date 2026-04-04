@@ -167,6 +167,12 @@
     <input type="file" id="input-ripristino" style="display:none" onchange="importaBackup(event)">
 </div>
 
+<div style="margin-top: 10px;">
+    <button onclick="apriGestioneListino()" class="btn-nav" style="width: 100%; background: #4a5568; border-color: #4a5568;">
+        ⚙️ MATERIALI
+    </button>
+</div>
+
         <button id="btn-conferma-elimina" class="btn-red hidden" style="background:#8b0000; width: 100%; margin-bottom: 10px;" onclick="eliminaSelezionati()">⚠️ CONFERMA CANCELLAZIONE</button>
 
         <div class="card" style="border-left-color: #6c757d; padding: 10px;">
@@ -184,7 +190,7 @@
             <input type="text" id="indirizzo" placeholder="Indirizzo">
             <input type="text" id="citta" placeholder="Città">
             <input type="text" id="telefono" placeholder="Telefono">
-            <button class="btn-green" onclick="salvaCliente()">✅ SALVA NEL CLOUD</button>
+            <button class="btn-green" onclick="salvaCliente()">✅ SALVA</button>
             <button class="btn-gray" onclick="tornaAllaLista()">❌ ANNULLA</button>
         </div>
     </div>
@@ -254,6 +260,10 @@ window.onbeforeunload = function(e) {
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
+	
+	// --- NUOVO: Variabili per il Listino ---
+	let refListino; 
+	let mioListino = {};
 
 // Abilita la persistenza offline (funziona solo su database compat)
 // Nota: Firebase Realtime DB gestisce internamente una cache temporanea.
@@ -281,7 +291,21 @@ if (cacheSalvata) {
 
         if (user) {
             // 1. ONLINE E LOGGATO
-            console.log("Utente Online");
+            console.log("Utente Online", user.uid);
+			// INIZIALIZZA IL LISTINO QUI
+            refListino = db.ref('users/' + user.uid + '/listino');
+            
+            // Ascolta i dati del listino in tempo reale
+            refListino.on('value', (snapshot) => {
+                mioListino = snapshot.val() || {};
+                console.log("Listino sincronizzato!");
+                
+                // Se il popup è aperto mentre i dati arrivano, aggiorna la vista
+                if (document.getElementById('modal-listino').style.display === 'block') {
+                    if (!categoriaSelezionata) renderizzaCategorie();
+                    else if (!sottocategoriaSelezionata) renderizzaSottocategorie();
+                }
+            });
             switchView('lista-clienti');
             ascoltaDatiCloud();
         } else {
@@ -555,6 +579,230 @@ function salvaSuCloud() {
         event.target.value = '';
     }
 
+// --- GESTIONE LISTINO MATERIALI (3 LIVELLI) ---
+    let categoriaSelezionata = null;
+    let sottocategoriaSelezionata = null;
+
+    function apriGestioneListino() {
+        document.getElementById('modal-listino').style.display = 'block';
+        renderizzaCategorie();
+        // Spingiamo uno stato nella cronologia per gestire il tasto indietro del telefono
+        window.history.pushState({modal: 'listino'}, null, window.location.href);
+    }
+
+    function chiudiGestioneListino() {
+        document.getElementById('modal-listino').style.display = 'none';
+        categoriaSelezionata = null;
+        sottocategoriaSelezionata = null;
+    }
+
+    // Modifichiamo il tuo onpopstate esistente o aggiungiamo questo controllo:
+    const vecchioPopstate = window.onpopstate;
+    window.onpopstate = function(event) {
+        if (document.getElementById('modal-listino').style.display === 'block') {
+            chiudiGestioneListino();
+        } else if (vecchioPopstate) {
+            vecchioPopstate(event);
+        }
+    };
+
+    function renderizzaCategorie() {
+        const corpo = document.getElementById('corpo-listino');
+        const azioni = document.getElementById('azioni-listino');
+        document.getElementById('titolo-listino').innerText = "LISTINO: CATEGORIE";
+        
+        let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+        const categorieIds = Object.keys(mioListino || {});
+        
+        categorieIds.forEach(id => {
+            html += `<button class="btn-gray" style="padding: 20px 5px; text-transform: uppercase; font-weight: bold;" onclick="selezionaCategoria('${id}')">
+                        ${mioListino[id].nome}
+                     </button>`;
+        });
+
+        if (categorieIds.length < 10) {
+            html += `<button class="btn-nuovo" style="padding: 20px 5px; border: 2px dashed #28a745; background: none; color: #28a745;" onclick="aggiungiCategoria()">
+                        + NUOVA CAT.
+                     </button>`;
+        }
+        
+        html += '</div>';
+        corpo.innerHTML = html;
+        azioni.innerHTML = ''; 
+    }
+
+    function aggiungiCategoria() {
+        const nome = prompt("Inserisci il nome della Categoria (es: CAVI):");
+        if (nome && nome.trim() !== "") {
+            const idCat = 'cat_' + Date.now();
+            refListino.child(idCat).set({
+                nome: nome.toUpperCase().trim(),
+                sottocategorie: {}
+            });
+        }
+    }
+
+    function selezionaCategoria(id) {
+        categoriaSelezionata = id;
+        renderizzaSottocategorie();
+    }
+
+    function renderizzaSottocategorie() {
+        const corpo = document.getElementById('corpo-listino');
+        const azioni = document.getElementById('azioni-listino');
+        const cat = mioListino[categoriaSelezionata];
+        document.getElementById('titolo-listino').innerText = cat.nome;
+
+        let html = `<button onclick="renderizzaCategorie()" class="btn-nav" style="width:100%; margin-bottom:10px; background:#6c757d;">⬅️ TORNA ALLE CATEGORIE</button>`;
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+
+        const subs = cat.sottocategorie || {};
+        Object.keys(subs).forEach(idSub => {
+            html += `<button class="btn-gray" style="padding: 15px 5px;" onclick="selezionaSottocategoria('${idSub}')">
+                        ${subs[idSub].nome}
+                     </button>`;
+        });
+
+        html += `<button class="btn-nuovo" style="padding: 15px 5px; border: 2px dashed #28a745; background: none; color: #28a745;" onclick="aggiungiSottocategoria()">
+                    + SOTTO-CAT.
+                 </button>`;
+        
+        html += '</div>';
+        corpo.innerHTML = html;
+        azioni.innerHTML = '';
+    }
+
+    function aggiungiSottocategoria() {
+        const nome = prompt("Nome Sottocategoria (es: UNIPOLARI):");
+        if (nome && nome.trim() !== "") {
+            const idSub = 'sub_' + Date.now();
+            refListino.child(categoriaSelezionata).child('sottocategorie').child(idSub).set({
+                nome: nome.toUpperCase().trim(),
+                articoli: {}
+            });
+        }
+    }
+// --- LIVELLO 3: ARTICOLI ---
+
+    function selezionaSottocategoria(idSub) {
+        sottocategoriaSelezionata = idSub;
+        renderizzaArticoli();
+    }
+
+    function renderizzaArticoli() {
+    const corpo = document.getElementById('corpo-listino');
+    const azioni = document.getElementById('azioni-listino');
+    const cat = mioListino[categoriaSelezionata];
+    const sub = cat.sottocategorie[sottocategoriaSelezionata];
+    document.getElementById('titolo-listino').innerText = sub.nome;
+
+    let html = `<button onclick="renderizzaSottocategorie()" class="btn-nav" style="width:100%; margin-bottom:15px; background:#6c757d; font-size:0.8rem;">⬅️ TORNA A ${cat.nome}</button>`;
+    
+    const arts = sub.articoli || {};
+    const artsIds = Object.keys(arts);
+
+    if (artsIds.length === 0) {
+        html += `<p style="text-align:center; color:#666; padding:20px;">Nessun articolo. Aggiungine uno!</p>`;
+    } else {
+        // Tabella con larghezze fisse per tenere tutto vicino
+        html += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; background:white; table-layout: fixed;">
+                    <thead>
+                        <tr style="background:#edf2f7; text-align:left; border-bottom:2px solid #cbd5e0;">
+                            <th style="padding:10px 5px; width: 50%;">Articolo</th>
+                            <th style="padding:10px 5px; width: 30%; text-align:right;">Prezzo</th>
+                            <th style="padding:10px 5px; width: 20%; text-align:right;">Az.</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        artsIds.forEach(idArt => {
+            const a = arts[idArt];
+            const pFisso = parseFloat(a.p) || 0;
+            html += `<tr style="border-bottom:1px solid #edf2f7;">
+                        <td style="padding:10px 5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <b>${a.n}</b>
+                        </td>
+                        <td style="padding:10px 5px; text-align:right; white-space:nowrap;">
+                            €${pFisso.toFixed(2)}<br><small style="color:#718096;">/${a.u}</small>
+                        </td>
+                        <td style="padding:10px 5px; text-align:right; white-space:nowrap;">
+                            <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none; color:#3182ce; font-size:1.1rem; padding:5px; cursor:pointer;">✏️</button>
+                            <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none; color:#e53e3e; font-size:1.1rem; padding:5px; cursor:pointer;">🗑️</button>
+                        </td>
+                    </tr>`;
+        });
+        html += `</tbody></table>`;
+    }
+
+    corpo.innerHTML = html;
+
+    azioni.innerHTML = `
+        <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold; margin-top:10px;">
+            + AGGIUNGI ARTICOLO
+        </button>
+    `;
+}
+
+    function aggiungiArticolo() {
+        const nome = prompt("Nome Articolo (es: Blu 1.5mm):");
+        if (!nome) return;
+        const prezzo = prompt("Prezzo (es: 0.25):", "0.00");
+        const unita = prompt("Unità di misura (mt o pz):", "mt");
+
+        if (nome && prezzo !== null) {
+            const idArt = 'art_' + Date.now();
+            refListino.child(categoriaSelezionata)
+                      .child('sottocategorie')
+                      .child(sottocategoriaSelezionata)
+                      .child('articoli')
+                      .child(idArt).set({
+                n: nome.trim(),
+                p: parseFloat(prezzo.replace(',', '.')),
+                u: unita.toLowerCase().trim()
+            }).then(() => {
+            // AGGIUNTA: Forza il refresh della tabella appena il database conferma il salvataggio
+            renderizzaArticoli(); 
+        });
+    }
+}
+
+    function eliminaArticolo(idArt) {
+        if(confirm("Eliminare l'articolo dal listino?")) {
+            refListino.child(categoriaSelezionata)
+                      .child('sottocategorie')
+                      .child(sottocategoriaSelezionata)
+                      .child('articoli')
+                      .child(idArt).remove()
+        .then(() => {
+            renderizzaArticoli(); // Refresh immediato dopo eliminazione
+        });
+    }
+}
+function modificaArticolo(idArt) {
+    const art = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata].articoli[idArt];
+    
+    const nuovoNome = prompt("Modifica Nome:", art.n);
+    if (!nuovoNome) return; // Se annulla, esce
+    
+    const nuovoPrezzo = prompt("Modifica Prezzo:", art.p);
+    const nuovaUnita = prompt("Modifica Unità (mt o pz):", art.u);
+
+    if (nuovoNome && nuovoPrezzo !== null) {
+        refListino.child(categoriaSelezionata)
+                  .child('sottocategorie')
+                  .child(sottocategoriaSelezionata)
+                  .child('articoli')
+                  .child(idArt).update({
+            n: nuovoNome.trim(),
+            p: parseFloat(nuovoPrezzo.toString().replace(',', '.')),
+            u: nuovaUnita.toLowerCase().trim()
+        }).then(() => {
+            renderizzaArticoli(); // Refresh immediato dopo modifica
+        });
+    }
+}
+
+
     // SERVICE WORKER (PWA)
     if ('serviceWorker' in navigator) { 
         navigator.serviceWorker.register('sw.js'); 
@@ -615,6 +863,21 @@ window.onbeforeunload = function(e) {
 };
 
 </script>
+
+<div id="modal-listino" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); font-family: sans-serif;">
+    <div style="background:#fff; margin:5% auto; padding:20px; width:90%; max-width:500px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto;">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h3 id="titolo-listino" style="margin:0; color:#2d3748; font-size: 1.2rem;">LISTINO MATERIALI</h3>
+            <button onclick="chiudiGestioneListino()" style="padding:8px 12px; background:#dc3545; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">X</button>
+        </div>
+        
+        <div id="corpo-listino"></div>
+        
+        <div id="azioni-listino" style="margin-top:20px; padding-top:15px; border-top:1px solid #eee;"></div>
+    </div>
+</div>
+
 
 </body>
 </html>
