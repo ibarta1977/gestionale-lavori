@@ -216,7 +216,9 @@
             </div>
             <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
             <button id="btn-nota" class="btn-green" onclick="salvaNota()">➕ AGGIUNGI</button>
-            <button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()">ANNULLA</button>
+<button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()">ANNULLA</button>
+
+<button id="btn-mat" class="btn-gray" onclick="apriListinoPerDiario()" style="background: #4a5568; color: white;">📦 + MAT.</button>
         </div>
 
         <div class="card" style="border-left-color: var(--success);">
@@ -271,6 +273,27 @@ window.onbeforeunload = function(e) {
 
     let clienti = [];
 
+// COLORI
+	
+	const coloriListino = [
+    '#edf2f7', // 1. GRIGIO DEFAULT (Reset)
+    '#3182ce', '#38a169', '#e53e3e', '#805ad5', 
+    '#d69e2e', '#319795', '#4a5568', '#dd6b20',
+    '#63b3ed', '#68d391', '#fc8181', '#b794f4', 
+    '#f6e05e', '#4fd1c5', '#a0aec0', '#f6ad55',
+    '#fbb6ce', '#b2f5ea', '#cbbcf6'  // Nuovi aggiunti per arrivare a 20
+];
+
+function getContrasto(hexcolor = '#edf2f7'){
+    hexcolor = hexcolor.replace("#", "");
+    var r = parseInt(hexcolor.substr(0,2),16);
+    var g = parseInt(hexcolor.substr(2,2),16);
+    var b = parseInt(hexcolor.substr(4,2),16);
+    var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? 'black' : 'white';
+}
+	
+
 // --- AGGIUNTA CACHE LOCALE ALL'AVVIO ---
 const cacheSalvata = localStorage.getItem('cache_clienti_globali');
 if (cacheSalvata) {
@@ -284,6 +307,7 @@ if (cacheSalvata) {
     let modoModificaCliente = false;
     let rigaDiarioModificaIdx = null;
     let modalitaElimina = false;
+	let modalitaSelezioneMateriale = false;
 
     // LOGIN / LOGOUT (VERSIONE CORRETTA PER OFFLINE)
     auth.onAuthStateChanged(user => {
@@ -544,8 +568,38 @@ function salvaSuCloud() {
     window.history.pushState(null, null, window.location.href);
 }
     function preparaModifica() { modoModificaCliente = true; const c = clienti[clienteAttivoIdx]; document.getElementById('titoloLavoro').value = c.titolo; document.getElementById('cognome').value = c.cognome; document.getElementById('nome').value = c.nome; document.getElementById('indirizzo').value = c.indirizzo; document.getElementById('citta').value = c.citta; document.getElementById('telefono').value = c.telefono; switchView('form-cliente'); }
-    function resetFormNota() { rigaDiarioModificaIdx = null; document.getElementById('nota-data').valueAsDate = new Date(); document.querySelectorAll('#nota-ore, #nota-costi, #nota-testo').forEach(i => i.value = ''); document.getElementById('btn-nota').innerText = "➕ AGGIUNGI"; document.getElementById('btn-annulla-nota').classList.add('hidden'); }
-    function preparaModificaNota(idx) { const r = clienti[clienteAttivoIdx].diario[idx]; rigaDiarioModificaIdx = idx; document.getElementById('nota-data').value = r.data; document.getElementById('nota-ore').value = r.ore; document.getElementById('nota-costi').value = r.costi; document.getElementById('nota-testo').value = r.note; document.getElementById('btn-nota').innerText = "AGGIORNA"; document.getElementById('btn-annulla-nota').classList.remove('hidden'); }
+	
+	function resetFormNota() {
+    rigaDiarioModificaIdx = null;
+    document.getElementById('nota-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('nota-ore').value = "";
+    document.getElementById('nota-costi').value = "";
+    document.getElementById('nota-testo').value = "";
+    
+    document.getElementById('btn-nota').innerText = "➕ AGGIUNGI";
+    document.getElementById('btn-annulla-nota').classList.add('hidden');
+    
+    // MOSTRA di nuovo il tasto materiali
+    if(document.getElementById('btn-mat')) {
+        document.getElementById('btn-mat').classList.remove('hidden');
+    }
+}
+    function preparaModificaNota(idx) { 
+    const r = clienti[clienteAttivoIdx].diario[idx]; 
+    rigaDiarioModificaIdx = idx; 
+    document.getElementById('nota-data').value = r.data; 
+    document.getElementById('nota-ore').value = r.ore; 
+    document.getElementById('nota-costi').value = r.costi; 
+    document.getElementById('nota-testo').value = r.note; 
+    
+    document.getElementById('btn-nota').innerText = "AGGIORNA"; 
+    document.getElementById('btn-annulla-nota').classList.remove('hidden'); 
+    
+    // NASCONDI il tasto materiali durante la modifica
+    if(document.getElementById('btn-mat')) {
+        document.getElementById('btn-mat').classList.add('hidden');
+    }
+}
 
     // NUOVE FUNZIONI: RICERCA E RIPRISTINO
     function filtraClienti() {
@@ -606,30 +660,57 @@ function salvaSuCloud() {
         }
     };
 
-    function renderizzaCategorie() {
-        const corpo = document.getElementById('corpo-listino');
-        const azioni = document.getElementById('azioni-listino');
-        document.getElementById('titolo-listino').innerText = "LISTINO: CATEGORIE";
-        
-        let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
-        const categorieIds = Object.keys(mioListino || {});
-        
-        categorieIds.forEach(id => {
-            html += `<button class="btn-gray" style="padding: 20px 5px; text-transform: uppercase; font-weight: bold;" onclick="selezionaCategoria('${id}')">
-                        ${mioListino[id].nome}
-                     </button>`;
-        });
+ 
+// --- LIVELLO 1: CATEGORIE ---
+function renderizzaCategorie() {
+    categoriaSelezionata = null;
+    sottocategoriaSelezionata = null;
+    
+    const corpo = document.getElementById('corpo-listino');
+    const azioni = document.getElementById('azioni-listino');
+    azioni.innerHTML = ''; 
+    
+    document.getElementById('titolo-listino').innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="font-weight: bold;">CATEGORIE</span>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; padding: 8px 12px; border-radius: 6px; cursor:pointer; font-weight:bold;">
+                    ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
+                </button>
+                <button onclick="chiudiGestioneListino()" style="background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor:pointer;">ESCI ✖</button>
+            </div>
+        </div>
+    `;
 
-        if (categorieIds.length < 10) {
-            html += `<button class="btn-nuovo" style="padding: 20px 5px; border: 2px dashed #28a745; background: none; color: #28a745;" onclick="aggiungiCategoria()">
-                        + NUOVA CAT.
-                     </button>`;
-        }
-        
-        html += '</div>';
-        corpo.innerHTML = html;
-        azioni.innerHTML = ''; 
-    }
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px 5px;">';
+    const categorieIds = Object.keys(mioListino || {});
+    
+    categorieIds.forEach(id => {
+        const cat = mioListino[id];
+        const sfondo = cat.colore || '#edf2f7';
+        const testoColore = getContrasto(sfondo);
+
+        html += `
+            <div style="position: relative; height: 80px;">
+                <button class="btn-gray" style="width: 100%; height: 100%; font-weight: bold; background: ${sfondo}; color: ${testoColore}; border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor:pointer;" 
+                        onclick="selezionaCategoria('${id}')">
+                    ${cat.nome}
+                </button>
+
+                ${modalitaEdit ? `
+                    <button onclick="cambiaColore('cat', '${id}')" 
+        style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
+    🎨
+</button>
+                    <button onclick="rinominaLivello('cat', '${id}')" style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
+                    <button onclick="eliminaLivello('cat', '${id}')" style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
+                ` : ''}
+            </div>`;
+    });
+
+    html += `<button class="btn-nuovo" style="height: 80px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px;" onclick="aggiungiCategoria()">+ NUOVA</button></div>`;
+    corpo.innerHTML = html;
+}
 
     function aggiungiCategoria() {
         const nome = prompt("Inserisci il nome della Categoria (es: CAVI):");
@@ -647,30 +728,71 @@ function salvaSuCloud() {
         renderizzaSottocategorie();
     }
 
-    function renderizzaSottocategorie() {
-        const corpo = document.getElementById('corpo-listino');
-        const azioni = document.getElementById('azioni-listino');
-        const cat = mioListino[categoriaSelezionata];
-        document.getElementById('titolo-listino').innerText = cat.nome;
+    // --- LIVELLO 2: SOTTOCATEGORIE ---
+let modalitaEdit = false; // Variabile globale per lo stato dei tasti
 
-        let html = `<button onclick="renderizzaCategorie()" class="btn-nav" style="width:100%; margin-bottom:10px; background:#6c757d;">⬅️ TORNA ALLE CATEGORIE</button>`;
-        html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
-
-        const subs = cat.sottocategorie || {};
-        Object.keys(subs).forEach(idSub => {
-            html += `<button class="btn-gray" style="padding: 15px 5px;" onclick="selezionaSottocategoria('${idSub}')">
-                        ${subs[idSub].nome}
-                     </button>`;
-        });
-
-        html += `<button class="btn-nuovo" style="padding: 15px 5px; border: 2px dashed #28a745; background: none; color: #28a745;" onclick="aggiungiSottocategoria()">
-                    + SOTTO-CAT.
-                 </button>`;
-        
-        html += '</div>';
-        corpo.innerHTML = html;
-        azioni.innerHTML = '';
+function toggleEdit() {
+    modalitaEdit = !modalitaEdit; // Inverte lo stato (true/false)
+    
+    // Ricarica la schermata corrente per mostrare/nascondere i tasti
+    if (sottocategoriaSelezionata) {
+        renderizzaArticoli();
+    } else if (categoriaSelezionata) {
+        renderizzaSottocategorie();
+    } else {
+        renderizzaCategorie();
     }
+}
+
+function renderizzaSottocategorie() {
+    sottocategoriaSelezionata = null;
+    const corpo = document.getElementById('corpo-listino');
+    const catPadre = mioListino[categoriaSelezionata];
+
+    document.getElementById('titolo-listino').innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.8rem; color: #718096; text-transform: uppercase;">Categoria</span>
+                <span style="font-weight: bold; font-size: 1.1rem;">${catPadre.nome}</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; padding: 8px 12px; border-radius: 6px; cursor:pointer; font-weight:bold;">
+                    ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
+                </button>
+                <button onclick="renderizzaCategorie()" style="background: #4a5568; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; cursor:pointer;">INDIETRO ⬅</button>
+            </div>
+        </div>
+    `;
+
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px 5px;">';
+    const subs = catPadre.sottocategorie || {};
+    
+    Object.keys(subs).forEach(idSub => {
+        const sub = subs[idSub];
+        const sfondo = sub.colore || '#edf2f7';
+        const testoColore = getContrasto(sfondo);
+
+        html += `
+            <div style="position: relative; height: 80px;">
+                <button class="btn-gray" style="width: 100%; height: 100%; font-weight: bold; font-size: 0.85rem; background: ${sfondo}; color: ${testoColore}; border: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor:pointer; display: flex; align-items: center; justify-content: center; text-align: center; padding: 5px;" 
+                        onclick="selezionaSottocategoria('${idSub}')">
+                    ${sub.nome}
+                </button>
+
+                ${modalitaEdit ? `
+                    <button onclick="cambiaColore('sub', '${idSub}')"
+        style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
+    🎨
+</button>
+                    <button onclick="rinominaLivello('sub', '${idSub}')" style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
+                    <button onclick="eliminaLivello('sub', '${idSub}')" style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
+                ` : ''}
+            </div>`;
+    });
+
+    html += `<button class="btn-nuovo" style="height: 80px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px;" onclick="aggiungiSottocategoria()">+ AGGIUNGI</button></div>`;
+    corpo.innerHTML = html;
+}
 
     function aggiungiSottocategoria() {
         const nome = prompt("Nome Sottocategoria (es: UNIPOLARI):");
@@ -682,6 +804,81 @@ function salvaSuCloud() {
             });
         }
     }
+	
+function rinominaLivello(tipo, id) {
+    let nomeAttuale = "";
+    let ref = null;
+
+    if (tipo === 'cat') {
+        nomeAttuale = mioListino[id].nome;
+        ref = refListino.child(id);
+    } else {
+        nomeAttuale = mioListino[categoriaSelezionata].sottocategorie[id].nome;
+        ref = refListino.child(categoriaSelezionata).child('sottocategorie').child(id);
+    }
+
+    const nuovoNome = prompt("Modifica nome:", nomeAttuale);
+    if (nuovoNome && nuovoNome.trim() !== "") {
+        ref.update({ nome: nuovoNome.toUpperCase().trim() });
+    }
+}
+
+function eliminaLivello(tipo, id) {
+    const msg = tipo === 'cat' 
+        ? "Eliminare l'intera CATEGORIA e tutto il suo contenuto?" 
+        : "Eliminare questa SOTTOCATEGORIA e tutti i suoi articoli?";
+    
+    if (confirm(msg)) {
+        if (tipo === 'cat') {
+            refListino.child(id).remove();
+        } else {
+            refListino.child(categoriaSelezionata).child('sottocategorie').child(id).remove();
+        }
+    }
+}
+
+
+// Definizione globale (mettila vicino a dove hai definito coloriListino)
+let tempColoreDati = { tipo: null, id: null };
+
+function cambiaColore(tipo, id) {
+    tempColoreDati = { tipo: tipo, id: id }; // Salviamo i dati per dopo
+    const container = document.getElementById('griglia-colori');
+    if (!container) return; // Sicurezza se il modal non esiste ancora
+    
+    container.innerHTML = ''; 
+
+    coloriListino.forEach((colore) => {
+        const div = document.createElement('div');
+        div.style.cssText = `background:${colore}; width:45px; height:45px; border-radius:8px; cursor:pointer; border:2px solid rgba(0,0,0,0.1);`;
+        div.onclick = function() { confermaColore(colore); };
+        container.appendChild(div);
+    });
+
+    document.getElementById('modal-colori').style.display = 'block';
+}
+
+
+function confermaColore(coloreScelto) {
+    const tipo = tempColoreDati.tipo;
+    const id = tempColoreDati.id;
+    
+    // Troviamo il riferimento corretto su Firebase
+    let ref;
+    if (tipo === 'cat') {
+        ref = refListino.child(id);
+    } else {
+        ref = refListino.child(categoriaSelezionata).child('sottocategorie').child(id);
+    }
+    
+    ref.update({ colore: coloreScelto }).then(() => {
+        document.getElementById('modal-colori').style.display = 'none';
+        // Non serve ricaricare, Firebase 'on value' lo farà per noi!
+    }).catch(err => console.error("Errore salvataggio colore:", err));
+}
+
+
+	
 // --- LIVELLO 3: ARTICOLI ---
 
     function selezionaSottocategoria(idSub) {
@@ -694,79 +891,104 @@ function salvaSuCloud() {
     const azioni = document.getElementById('azioni-listino');
     const cat = mioListino[categoriaSelezionata];
     const sub = cat.sottocategorie[sottocategoriaSelezionata];
-    document.getElementById('titolo-listino').innerText = sub.nome;
 
-    let html = `<button onclick="renderizzaSottocategorie()" class="btn-nav" style="width:100%; margin-bottom:15px; background:#6c757d; font-size:0.8rem;">⬅️ TORNA A ${cat.nome}</button>`;
-    
+    // Toolbar Articoli
+    document.getElementById('titolo-listino').innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.7rem; color: #718096; text-transform: uppercase;">${cat.nome}</span>
+                <span style="font-weight: bold; font-size: 1rem;">${sub.nome}</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; padding: 8px 12px; border-radius: 6px; cursor:pointer; font-weight:bold;">
+    ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
+</button>
+                <button onclick="renderizzaSottocategorie()" style="background: #4a5568; color: white; border: none; padding: 8px 12px; border-radius: 6px;">INDIETRO ⬅</button>
+            </div>
+        </div>
+    `;
+
     const arts = sub.articoli || {};
     const artsIds = Object.keys(arts);
 
-    if (artsIds.length === 0) {
-        html += `<p style="text-align:center; color:#666; padding:20px;">Nessun articolo. Aggiungine uno!</p>`;
-    } else {
-        // Tabella con larghezze fisse per tenere tutto vicino
-        html += `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; background:white; table-layout: fixed;">
-                    <thead>
-                        <tr style="background:#edf2f7; text-align:left; border-bottom:2px solid #cbd5e0;">
-                            <th style="padding:10px 5px; width: 50%;">Articolo</th>
-                            <th style="padding:10px 5px; width: 30%; text-align:right;">Prezzo</th>
-                            <th style="padding:10px 5px; width: 20%; text-align:right;">Az.</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-        
-        artsIds.forEach(idArt => {
-            const a = arts[idArt];
-            const pFisso = parseFloat(a.p) || 0;
-            html += `<tr style="border-bottom:1px solid #edf2f7;">
-                        <td style="padding:10px 5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            <b>${a.n}</b>
-                        </td>
-                        <td style="padding:10px 5px; text-align:right; white-space:nowrap;">
-                            €${pFisso.toFixed(2)}<br><small style="color:#718096;">/${a.u}</small>
-                        </td>
-                        <td style="padding:10px 5px; text-align:right; white-space:nowrap;">
-                            <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none; color:#3182ce; font-size:1.1rem; padding:5px; cursor:pointer;">✏️</button>
-                            <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none; color:#e53e3e; font-size:1.1rem; padding:5px; cursor:pointer;">🗑️</button>
-                        </td>
-                    </tr>`;
-        });
-        html += `</tbody></table>`;
-    }
+    let html = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">`;
+    
+    artsIds.forEach(idArt => {
+        const a = arts[idArt];
+// Rendiamo il nome cliccabile aggiungendo l'onclick e un po' di stile
+html += `
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 12px 5px; cursor: pointer; color: #2b6cb0;" onclick="selezionaMaterialePerDiario('${idArt}')"> 
+            <strong>${a.n}</strong>
+        </td>
+        <td style="padding: 12px 5px; text-align: right;">
+            €${parseFloat(a.p).toFixed(2)}<br><small>${a.u}</small>
+        </td>
+        ${modalitaEdit ? `
+        <td style="padding: 12px 5px; text-align: right;">
+            <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none;">✏️</button>
+            <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none;">🗑️</button>
+        </td>` : ''}
+    </tr>`;
+    });
+    html += `</table>`;
 
     corpo.innerHTML = html;
 
+    // IL TASTO AGGIUNGI APPARE SOLO QUI!
     azioni.innerHTML = `
-        <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold; margin-top:10px;">
-            + AGGIUNGI ARTICOLO
+        <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
+            + AGGIUNGI ARTICOLO IN ${sub.nome}
         </button>
     `;
 }
 
     function aggiungiArticolo() {
-        const nome = prompt("Nome Articolo (es: Blu 1.5mm):");
-        if (!nome) return;
-        const prezzo = prompt("Prezzo (es: 0.25):", "0.00");
-        const unita = prompt("Unità di misura (mt o pz):", "mt");
+    const nome = prompt("Nome materiale (es. Cavo 3x1.5):");
+    if (!nome || nome.trim() === "") return; 
 
-        if (nome && prezzo !== null) {
-            const idArt = 'art_' + Date.now();
-            refListino.child(categoriaSelezionata)
-                      .child('sottocategorie')
-                      .child(sottocategoriaSelezionata)
-                      .child('articoli')
-                      .child(idArt).set({
-                n: nome.trim(),
-                p: parseFloat(prezzo.replace(',', '.')),
-                u: unita.toLowerCase().trim()
-            }).then(() => {
-            // AGGIUNTA: Forza il refresh della tabella appena il database conferma il salvataggio
-            renderizzaArticoli(); 
-        });
+    const prezzoInput = prompt("Prezzo unitario (€):", "0");
+    if (prezzoInput === null) return; 
+    const prezzoFisico = parseFloat(prezzoInput.replace(',', '.'));
+    
+    if (isNaN(prezzoFisico)) {
+        alert("Prezzo non valido! Usa i numeri.");
+        return;
     }
+
+    // Il "3" finale imposta "nr" come scelta predefinita nel quadratino del prompt
+const um = prompt("Unità di misura:\n1: mt (Metri)\n2: pz (Pezzi)\n3: nr (Numero)\n4: kg (Chilogrammi)\n5: conf (Confezione)", "3");
+
+if (um === null) return; // Se preme annulla, esce.
+
+let umTesto; 
+switch(um.trim()) {
+    case "1": umTesto = "mt"; break;
+    case "2": umTesto = "pz"; break;
+    case "3": umTesto = "nr"; break;
+    case "4": umTesto = "kg"; break;
+    case "5": umTesto = "conf"; break;
+    default: umTesto = "nr"; // Se scrive un numero inesistente o lascia vuoto
 }
 
-    function eliminaArticolo(idArt) {
+    const idArt = 'art_' + Date.now();
+    const ref = refListino.child(categoriaSelezionata)
+                          .child('sottocategorie')
+                          .child(sottocategoriaSelezionata)
+                          .child('articoli');
+
+    // USIAMO LE ABBREVIAZIONI COERENTI CON IL TUO DB
+    ref.child(idArt).set({
+        n: nome.toUpperCase().trim(), // n invece di nome
+        p: prezzoFisico,              // p invece di prezzo
+        u: umTesto                    // u invece di um
+    }).then(() => {
+        renderizzaArticoli(); 
+    }).catch(err => alert("Errore: " + err.message));
+}
+
+
+function eliminaArticolo(idArt) {
         if(confirm("Eliminare l'articolo dal listino?")) {
             refListino.child(categoriaSelezionata)
                       .child('sottocategorie')
@@ -778,29 +1000,111 @@ function salvaSuCloud() {
         });
     }
 }
+
+
+
+
 function modificaArticolo(idArt) {
     const art = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata].articoli[idArt];
     
+    // 1. Modifica Nome
     const nuovoNome = prompt("Modifica Nome:", art.n);
-    if (!nuovoNome) return; // Se annulla, esce
+    if (!nuovoNome) return; 
     
-    const nuovoPrezzo = prompt("Modifica Prezzo:", art.p);
-    const nuovaUnita = prompt("Modifica Unità (mt o pz):", art.u);
+    // 2. Modifica Prezzo
+    const nuovoPrezzoInput = prompt("Modifica Prezzo:", art.p);
+    if (nuovoPrezzoInput === null) return;
+    const nuovoPrezzoFisico = parseFloat(nuovoPrezzoInput.toString().replace(',', '.'));
 
-    if (nuovoNome && nuovoPrezzo !== null) {
-        refListino.child(categoriaSelezionata)
-                  .child('sottocategorie')
-                  .child(sottocategoriaSelezionata)
-                  .child('articoli')
-                  .child(idArt).update({
-            n: nuovoNome.trim(),
-            p: parseFloat(nuovoPrezzo.toString().replace(',', '.')),
-            u: nuovaUnita.toLowerCase().trim()
-        }).then(() => {
-            renderizzaArticoli(); // Refresh immediato dopo modifica
-        });
+    // 3. Modifica Unità con lo stesso tastierino dell'aggiunta
+    // Cerchiamo di suggerire il numero attuale dell'articolo
+    let suggerimentoUM = "3"; // Default nr
+    if (art.u === "mt") suggerimentoUM = "1";
+    if (art.u === "pz") suggerimentoUM = "2";
+    if (art.u === "nr") suggerimentoUM = "3";
+    if (art.u === "kg") suggerimentoUM = "4";
+    if (art.u === "conf") suggerimentoUM = "5";
+
+    const umScelta = prompt("Modifica Unità di misura:\n1: mt (Metri)\n2: pz (Pezzi)\n3: nr (Numero)\n4: kg (Chilogrammi)\n5: conf (Confezione)", suggerimentoUM);
+    
+    if (umScelta === null) return;
+
+    let nuovaUnita;
+    switch(umScelta.trim()) {
+        case "1": nuovaUnita = "mt"; break;
+        case "2": nuovaUnita = "pz"; break;
+        case "3": nuovaUnita = "nr"; break;
+        case "4": nuovaUnita = "kg"; break;
+        case "5": nuovaUnita = "conf"; break;
+        default: nuovaUnita = art.u; // Se sbaglia, tiene quella che c'era già
     }
+
+    // 4. Update su Firebase
+    refListino.child(categoriaSelezionata)
+              .child('sottocategorie')
+              .child(sottocategoriaSelezionata)
+              .child('articoli')
+              .child(idArt).update({
+        n: nuovoNome.toUpperCase().trim(),
+        p: nuovoPrezzoFisico,
+        u: nuovaUnita
+    }).then(() => {
+        renderizzaArticoli(); // Refresh immediato
+    });
 }
+
+
+function apriListinoPerDiario() {
+    modalitaSelezioneMateriale = true;
+    // Chiude eventuali modalità edit del listino per sicurezza
+    modalitaEdit = false; 
+    apriGestioneListino(); 
+}
+
+function selezionaMaterialePerDiario(idArt) {
+    // Se non siamo partiti dal diario, non fare nulla
+    if (!modalitaSelezioneMateriale) return;
+
+    const art = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata].articoli[idArt];
+    
+    const qtaInput = prompt(`Inserisci quantità per:\n${art.n}\nPrezzo: €${art.p} / ${art.u}`, "1");
+    if (qtaInput === null || qtaInput.trim() === "") return;
+
+    const qta = parseFloat(qtaInput.replace(',', '.'));
+    if (isNaN(qta)) return alert("Quantità non valida");
+
+    const costoTotale = qta * art.p;
+    const dataOggi = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD per il tuo input date
+
+    // Creiamo la riga per il diario (usando le tue sigle n, p, u)
+    const nuovaRigaMateriale = {
+        data: dataOggi,
+        ore: 0,
+        costi: costoTotale,
+        note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
+    };
+
+    // Inseriamo nel diario del cliente attivo
+    if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+    clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
+
+    // Salvataggio e aggiornamento (usando le tue funzioni esistenti)
+    salvaSuCloud();
+    renderDiario();
+    
+    // Reset e chiusura
+    modalitaSelezioneMateriale = false;
+    chiudiListino(); 
+    alert("Materiale aggiunto!");
+}
+
+
+
+
+
+
+
+
 
 
     // SERVICE WORKER (PWA)
@@ -864,20 +1168,26 @@ window.onbeforeunload = function(e) {
 
 </script>
 
-<div id="modal-listino" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); font-family: sans-serif;">
-    <div style="background:#fff; margin:5% auto; padding:20px; width:90%; max-width:500px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto;">
+<div id="modal-listino" class="modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); overflow:auto;">
+    <div class="modal-content" style="background-color:#fefefe; margin:5% auto; padding:20px; border:1px solid #888; width:90%; max-width:600px; border-radius:12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position:relative;">
         
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-            <h3 id="titolo-listino" style="margin:0; color:#2d3748; font-size: 1.2rem;">LISTINO MATERIALI</h3>
-            <button onclick="chiudiGestioneListino()" style="padding:8px 12px; background:#dc3545; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">X</button>
-        </div>
+        <div id="titolo-listino" style="margin-bottom: 10px;"></div>
         
-        <div id="corpo-listino"></div>
-        
-        <div id="azioni-listino" style="margin-top:20px; padding-top:15px; border-top:1px solid #eee;"></div>
+        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+
+        <div id="corpo-listino" style="min-height: 200px; max-height: 60vh; overflow-y: auto; padding: 5px;">
+            </div>
+
+        <div id="azioni-listino" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+            </div>
     </div>
 </div>
 
+<div id="modal-colori" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); z-index:9999; width:280px;">
+    <h4 style="margin:0 0 15px 0; text-align:center;">Scegli Colore</h4>
+    <div id="griglia-colori" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px;"></div>
+    <button onclick="document.getElementById('modal-colori').style.display='none'" style="margin-top:15px; background:#666;">ANNULLA</button>
+</div>
 
 </body>
 </html>
