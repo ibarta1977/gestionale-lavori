@@ -18,6 +18,8 @@
         button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-green { background: var(--success); }
         .btn-gray { background: #6c757d; }
+		.btn-blue { background-color: #004085; color: white; }
+		.btn-yellow { background-color: #ffc107; color: black; font-weight: bold; }
         .btn-red { background: var(--danger); }
         .btn-yellow { background: var(--warning); color: #333 !important; }
         .hidden { display: none; }
@@ -168,7 +170,7 @@
 </div>
 
 <div style="margin-top: 10px;">
-    <button onclick="apriGestioneListino()" class="btn-nav" style="width: 100%; background: #4a5568; border-color: #4a5568;">
+    <button onclick="apriGestioneListino()" class="btn-nav" style="background-color: #17a2b8 !important; color: white !important;" border-color: #4a5568;">
         ⚙️ MATERIALI
     </button>
 </div>
@@ -191,7 +193,7 @@
             <input type="text" id="citta" placeholder="Città">
             <input type="text" id="telefono" placeholder="Telefono">
             <button class="btn-green" onclick="salvaCliente()">✅ SALVA</button>
-            <button class="btn-gray" onclick="tornaAllaLista()">❌ ANNULLA</button>
+            <button class="btn-red" onclick="tornaAllaLista()">❌ ANNULLA</button>
         </div>
     </div>
 
@@ -200,8 +202,8 @@
             <h2 id="view-titolo" style="margin:0; color:var(--primary);"></h2>
             <p id="view-anagrafica"></p>
             <div class="flex-row">
-                <button class="btn-gray" onclick="tornaAllaLista()">🏠 HOME</button>
-                <button class="btn-gray" onclick="preparaModifica()">✏️ MODIFICA</button>
+                <button class="btn-blue" onclick="tornaAllaLista()">🏠 HOME</button>
+                <button class="btn-yellow" onclick="preparaModifica()">✏️ MODIFICA</button>
                 <button class="btn-red" onclick="eliminaClienteSingolo()">🗑️ ELIMINA</button>
                 <button class="btn-green" onclick="window.print()">🖨️ PDF</button>
             </div>
@@ -215,11 +217,30 @@
                 <input type="number" id="nota-costi" placeholder="€ Costi">
             </div>
             <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
-            <button id="btn-nota" class="btn-green" onclick="salvaNota()">➕ AGGIUNGI</button>
-<button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()">ANNULLA</button>
+            
+			
+			<div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
+    
+    <button id="btn-nota" class="btn-green" onclick="salvaNota()" 
+        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important;">
+        ➕ NOTA
+    </button>
+    
+    <button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()" 
+        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important; background-color: #dc3545 !important;">
+        ANNULLA
+    </button>
 
-<button id="btn-mat" class="btn-gray" onclick="apriListinoPerDiario()" style="background: #4a5568; color: white;">📦 + MAT.</button>
-        </div>
+    <button id="btn-mat" onclick="apriListinoPerDiario()" 
+        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important; background-color: #17a2b8 !important;">
+        ➕ MATERIALI
+    </button>
+    
+</div>
+    </div>
+
+
+
 
         <div class="card" style="border-left-color: var(--success);">
             <h3>📖 Diario Lavori</h3>
@@ -576,7 +597,7 @@ function salvaSuCloud() {
     document.getElementById('nota-costi').value = "";
     document.getElementById('nota-testo').value = "";
     
-    document.getElementById('btn-nota').innerText = "➕ AGGIUNGI";
+    document.getElementById('btn-nota').innerText = "➕ AGGIUNGI NOTA";
     document.getElementById('btn-annulla-nota').classList.add('hidden');
     
     // MOSTRA di nuovo il tasto materiali
@@ -592,7 +613,7 @@ function salvaSuCloud() {
     document.getElementById('nota-costi').value = r.costi; 
     document.getElementById('nota-testo').value = r.note; 
     
-    document.getElementById('btn-nota').innerText = "AGGIORNA"; 
+    document.getElementById('btn-nota').innerText = "✅ AGGIORNA NOTA"; 
     document.getElementById('btn-annulla-nota').classList.remove('hidden'); 
     
     // NASCONDI il tasto materiali durante la modifica
