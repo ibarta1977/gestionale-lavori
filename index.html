@@ -136,6 +136,12 @@
     #view-anagrafica { font-size: 12pt; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
 }    
 
+
+
+
+
+
+
 </style>
 
     <link rel="manifest" href="manifest.json">
@@ -257,6 +263,10 @@
         </div>
     </div>
 </div>
+
+
+
+
 
 <script>
 
@@ -703,7 +713,7 @@ function renderizzaCategorie() {
         </div>
     `;
 
-    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px 5px;">';
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 15px 5px;">';
     const categorieIds = Object.keys(mioListino || {});
     
     categorieIds.forEach(id => {
@@ -785,7 +795,7 @@ function renderizzaSottocategorie() {
         </div>
     `;
 
-    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px 5px;">';
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 15px 5px;">';
     const subs = catPadre.sottocategorie || {};
     
     Object.keys(subs).forEach(idSub => {
@@ -1189,20 +1199,22 @@ window.onbeforeunload = function(e) {
 
 </script>
 
-<div id="modal-listino" class="modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); overflow:auto;">
-    <div class="modal-content" style="background-color:#fefefe; margin:5% auto; padding:20px; border:1px solid #888; width:90%; max-width:600px; border-radius:12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position:relative;">
+<div id="modal-listino" class="modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); overflow:hidden;">
+    <div class="modal-content" style="background-color:#fefefe; margin:2% auto; padding:15px; border:1px solid #888; width:95%; max-width:800px; height: 92vh; border-radius:12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position:relative; display:flex; flex-direction:column;">
         
-        <div id="titolo-listino" style="margin-bottom: 10px;"></div>
+        <div id="titolo-listino" style="margin-bottom: 5px;"></div>
         
-        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+        <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
 
-        <div id="corpo-listino" style="min-height: 200px; max-height: 60vh; overflow-y: auto; padding: 5px;">
+        <div id="corpo-listino" style="flex-grow: 1; overflow-y: auto; padding: 5px;">
             </div>
 
-        <div id="azioni-listino" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+        <div id="azioni-listino" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
             </div>
     </div>
 </div>
+
+
 
 <div id="modal-colori" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); z-index:9999; width:280px;">
     <h4 style="margin:0 0 15px 0; text-align:center;">Scegli Colore</h4>
