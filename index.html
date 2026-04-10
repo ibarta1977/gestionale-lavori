@@ -713,16 +713,16 @@ function renderizzaCategorie() {
     azioni.innerHTML = ''; 
     
    document.getElementById('titolo-listino').innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 10px; box-sizing: border-box;">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
         <div style="display: flex; flex-direction: column; justify-content: center;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">Materiali</span>
             <span style="font-weight: bold; font-size: 1.1rem; line-height: 1.2;">CATEGORIE</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
-            <button onclick="chiudiGestioneListino()" style="background: #e53e3e; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="chiudiGestioneListino()" style="background: #e53e3e; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 CHIUDI ✖
             </button>
         </div>
@@ -797,16 +797,16 @@ function renderizzaSottocategorie() {
     const catPadre = mioListino[categoriaSelezionata];
 
    document.getElementById('titolo-listino').innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 10px; box-sizing: border-box;">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
         <div style="display: flex; flex-direction: column; justify-content: center;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">Categoria</span>
             <span style="font-weight: bold; font-size: 1.1rem; line-height: 1.2;">${catPadre.nome}</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
-            <button onclick="renderizzaCategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="renderizzaCategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 INDIETRO ⬅
             </button>
         </div>
@@ -943,16 +943,16 @@ function confermaColore(coloreScelto) {
 
     // Toolbar Articoli
    document.getElementById('titolo-listino').innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 10px; box-sizing: border-box;">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
         <div style="display: flex; flex-direction: column; justify-content: center;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">${cat.nome}</span>
             <span style="font-weight: bold; font-size: 1.1rem; line-height: 1.2;">${sub.nome}</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
-            <button onclick="renderizzaSottocategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 125px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="renderizzaSottocategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 INDIETRO ⬅
             </button>
         </div>
