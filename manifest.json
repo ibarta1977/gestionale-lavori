@@ -1,6 +1,7 @@
 {
   "name": "Gestionale Lavori",
   "short_name": "Gestionale Lavori",
+  "version": "4.0.1",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f0f2f5",
