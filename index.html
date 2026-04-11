@@ -1059,46 +1059,53 @@ apriTastierino(titoloHtml, (qta) => {
 }
 
 function aggiungiArticolo() {
-    // 1. Nome (unica cosa che teniamo col prompt perché serve la tastiera testo)
     const nome = prompt("Nome materiale:");
     if (!nome || nome.trim() === "") return;
 
-    // 2. Apriamo il tastierino per il PREZZO
     apriTastierino(`Prezzo per:<br><span style="color:#48bb78; font-size:1.2rem;">${nome.toUpperCase()}</span>`, (prezzoFisico) => {
-        
-        if (prezzoFisico === null) return; // Annullato
+        if (prezzoFisico === null) return;
 
-        // 3. Scelta Unità di Misura (veloce)
-        const um = prompt("Unità di misura:\n1: mt (Metri)\n2: nr (Numero/Pezzi)\n3: kg (Chilogrammi)\n4: conf (Confezione)", "2");
-        if (um === null) return;
+        // Creiamo una funzione interna per poterla richiamare in caso di errore
+        const chiediUM = () => {
+            apriTastierino("Scegli Unità di Misura:<br>1:mt | 2:nr | 3:kg | 4:conf", (sceltaUm) => {
+                if (sceltaUm === null) return; // Se preme Annulla esce del tutto
 
-        let umTesto;
-        switch(um.trim()) {
-            case "1": umTesto = "mt"; break;
-            case "2": umTesto = "nr"; break;
-            case "3": umTesto = "kg"; break;
-            case "4": umTesto = "conf"; break;
-            default: umTesto = "nr";
-        }
+                let umTesto = "";
+                const scelta = Math.floor(sceltaUm);
 
-        // 4. Salvataggio su Firebase
-        const idArt = 'art_' + Date.now();
-        const ref = refListino.child(categoriaSelezionata)
-                             .child('sottocategorie')
-                             .child(sottocategoriaSelezionata)
-                             .child('articoli');
+                switch(scelta) {
+                    case 1: umTesto = "mt"; break;
+                    case 2: umTesto = "nr"; break;
+                    case 3: umTesto = "kg"; break;
+                    case 4: umTesto = "conf"; break;
+                    default: 
+                        // ERRORE: Avvisiamo l'utente e rilanciamo la funzione stessa (LOOP)
+                        alert("SCELTA " + scelta + " NON VALIDA!\nInserisci un numero da 1 a 4.");
+                        chiediUM(); 
+                        return;
+                }
 
-        // USIAMO LE ABBREVIAZIONI COERENTI CON IL TUO DB
-        ref.child(idArt).set({
-            n: nome.toUpperCase().trim(),
-            p: prezzoFisico,
-            u: umTesto
-        }).then(() => {
-            renderizzaArticoli(); 
-        }).catch(err => alert("Errore: " + err.message));
+                // Se arriviamo qui, la scelta è corretta (1-4)
+                const idArt = 'art_' + Date.now();
+                const ref = refListino.child(categoriaSelezionata)
+                                     .child('sottocategorie')
+                                     .child(sottocategoriaSelezionata)
+                                     .child('articoli');
 
-    }); // <--- QUESTA GRAFFA E PARENTESI CHIUDONO IL TASTIERINO (Mancavano!)
-} // <--- QUESTA CHIUDE LA FUNZIONE PRINCIPALE
+                ref.child(idArt).set({
+                    n: nome.toUpperCase().trim(),
+                    p: prezzoFisico,
+                    u: umTesto
+                }).then(() => {
+                    renderizzaArticoli(); 
+                }).catch(err => alert("Errore: " + err.message));
+            });
+        };
+
+        // Lanciamo la prima volta la richiesta UM
+        chiediUM();
+    });
+}
 
 
 function eliminaArticolo(idArt) {
