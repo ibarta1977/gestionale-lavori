@@ -1174,8 +1174,9 @@ apriTastierino(titoloHtml, (qta) => {
                     data: dataOggi,
                     ore: 0,
                     costi: costoTotale,
-                    // Formato: "18 PZ. - NOME ARTICOLO"
-                    note: `${qta} ${art.u}. - ${art.n}`.toUpperCase()
+                    // Formato: "MT. 5 - NOME ARTICOLO"
+                
+					note: `${art.u}. ${qta} - ${art.n}`.toUpperCase()
                 };
 
                 if (!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
