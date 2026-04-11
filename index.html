@@ -1029,8 +1029,11 @@ function confermaColore(coloreScelto) {
         const percorso = carrelloMultiplo[indiceCorrente];
         const parti = percorso.split('|');
         const art = mioListino[parti[0]].sottocategorie[parti[1]].articoli[parti[2]];
+		
+		const titoloHtml = `Quantità per:<br><span style="color:#48bb78; font-size:1.2rem; font-weight:bold;">${art.n}</span><br><span style="color:#ecc94b; font-size:0.9rem;">(${art.u})</span>`;
 
-        apriTastierino(`Quantità per: ${art.n} (${art.u})`, (qta) => {
+apriTastierino(titoloHtml, (qta) => {
+			
             if (qta !== null && qta > 0) {
                 const costoTotale = qta * art.p;
                 const nuovaRigaMateriale = {
@@ -1055,49 +1058,47 @@ function confermaColore(coloreScelto) {
     processaProssimo();
 }
 
-    function aggiungiArticolo() {
-    const nome = prompt("Nome materiale (es. Cavo 3x1.5):");
-    if (!nome || nome.trim() === "") return; 
+function aggiungiArticolo() {
+    // 1. Nome (unica cosa che teniamo col prompt perché serve la tastiera testo)
+    const nome = prompt("Nome materiale:");
+    if (!nome || nome.trim() === "") return;
 
-    const prezzoInput = prompt("Prezzo unitario (€):", "0");
-    if (prezzoInput === null) return; 
-    const prezzoFisico = parseFloat(prezzoInput.replace(',', '.'));
-    
-    if (isNaN(prezzoFisico)) {
-        alert("Prezzo non valido! Usa i numeri.");
-        return;
-    }
+    // 2. Apriamo il tastierino per il PREZZO
+    apriTastierino(`Prezzo per:<br><span style="color:#48bb78; font-size:1.2rem;">${nome.toUpperCase()}</span>`, (prezzoFisico) => {
+        
+        if (prezzoFisico === null) return; // Annullato
 
-    // Il "3" finale imposta "nr" come scelta predefinita nel quadratino del prompt
-const um = prompt("Unità di misura:\n1: mt (Metri)\n2: pz (Pezzi)\n3: nr (Numero)\n4: kg (Chilogrammi)\n5: conf (Confezione)", "3");
+        // 3. Scelta Unità di Misura (veloce)
+        const um = prompt("Unità di misura:\n1: mt (Metri)\n2: nr (Numero/Pezzi)\n3: kg (Chilogrammi)\n4: conf (Confezione)", "2");
+        if (um === null) return;
 
-if (um === null) return; // Se preme annulla, esce.
+        let umTesto;
+        switch(um.trim()) {
+            case "1": umTesto = "mt"; break;
+            case "2": umTesto = "nr"; break;
+            case "3": umTesto = "kg"; break;
+            case "4": umTesto = "conf"; break;
+            default: umTesto = "nr";
+        }
 
-let umTesto; 
-switch(um.trim()) {
-    case "1": umTesto = "mt"; break;
-    case "2": umTesto = "pz"; break;
-    case "3": umTesto = "nr"; break;
-    case "4": umTesto = "kg"; break;
-    case "5": umTesto = "conf"; break;
-    default: umTesto = "nr"; // Se scrive un numero inesistente o lascia vuoto
-}
+        // 4. Salvataggio su Firebase
+        const idArt = 'art_' + Date.now();
+        const ref = refListino.child(categoriaSelezionata)
+                             .child('sottocategorie')
+                             .child(sottocategoriaSelezionata)
+                             .child('articoli');
 
-    const idArt = 'art_' + Date.now();
-    const ref = refListino.child(categoriaSelezionata)
-                          .child('sottocategorie')
-                          .child(sottocategoriaSelezionata)
-                          .child('articoli');
+        // USIAMO LE ABBREVIAZIONI COERENTI CON IL TUO DB
+        ref.child(idArt).set({
+            n: nome.toUpperCase().trim(),
+            p: prezzoFisico,
+            u: umTesto
+        }).then(() => {
+            renderizzaArticoli(); 
+        }).catch(err => alert("Errore: " + err.message));
 
-    // USIAMO LE ABBREVIAZIONI COERENTI CON IL TUO DB
-    ref.child(idArt).set({
-        n: nome.toUpperCase().trim(), // n invece di nome
-        p: prezzoFisico,              // p invece di prezzo
-        u: umTesto                    // u invece di um
-    }).then(() => {
-        renderizzaArticoli(); 
-    }).catch(err => alert("Errore: " + err.message));
-}
+    }); // <--- QUESTA GRAFFA E PARENTESI CHIUDONO IL TASTIERINO (Mancavano!)
+} // <--- QUESTA CHIUDE LA FUNZIONE PRINCIPALE
 
 
 function eliminaArticolo(idArt) {
@@ -1217,7 +1218,7 @@ function chiudiTastierino(conferma) {
 function apriTastierino(titolo, cb) {
     valoreTastierino = "0";
     document.getElementById('tastierino-display').innerText = "0";
-    document.getElementById('tastierino-titolo').innerText = titolo;
+    document.getElementById('tastierino-titolo').innerHTML = titolo;
     callbackTastierino = cb;
     document.getElementById('modal-tastierino').style.display = 'flex';
 }
@@ -1313,30 +1314,32 @@ window.onbeforeunload = function(e) {
 </div>
 
 
-<div id="modal-tastierino" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
-    <div style="background:#1a202c; width:90%; max-width:320px; border-radius:20px; padding:20px; box-sizing:border-box; box-shadow:0 15px 35px rgba(0,0,0,0.7); border:2px solid #ecc94b;">
+<div id="modal-tastierino" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+    <div style="background:#1a202c; width:95%; max-width:320px; border-radius:20px; padding:15px; box-sizing:border-box; box-shadow:0 15px 35px rgba(0,0,0,0.8); border:2px solid #ecc94b;">
         
-        <div id="tastierino-titolo" style="font-family:'Courier New', monospace; font-size:1.1rem; color:#ecc94b; margin-bottom:12px; text-align:center; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Inserisci quantità</div>
-        <div id="tastierino-display" style="width:100%; background:#2d3748; height:70px; border-radius:12px; display:flex; align-items:center; justify-content:flex-end; padding:0 20px; font-family:'Courier New', monospace; font-size:2.8rem; font-weight:bold; color:#fff; margin-bottom:25px; box-sizing:border-box; border:1px solid #4a5568; text-shadow: 0 0 10px rgba(255,255,255,0.5);">0</div>
+        <div id="tastierino-titolo" style="font-family:'Courier New', monospace; font-size:1rem; color:#ecc94b; margin-bottom:10px; text-align:center; font-weight:bold; text-transform:uppercase; letter-spacing:1px; line-height:1.2;">
+            Quantità per:
+        </div>
+        <div id="tastierino-display" style="width:100%; background:#2d3748; height:65px; border-radius:12px; display:flex; align-items:center; justify-content:flex-end; padding:0 20px; font-family:'Courier New', monospace; font-size:2.6rem; font-weight:bold; color:#fff; margin-bottom:15px; box-sizing:border-box; border:1px solid #4a5568; text-shadow: 0 0 10px rgba(255,255,255,0.5);">0</div>
         
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
-            <button onclick="inputTastierino('1')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">1</button>
-            <button onclick="inputTastierino('2')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">2</button>
-            <button onclick="inputTastierino('3')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">3</button>
-            <button onclick="inputTastierino('4')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">4</button>
-            <button onclick="inputTastierino('5')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">5</button>
-            <button onclick="inputTastierino('6')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">6</button>
-            <button onclick="inputTastierino('7')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">7</button>
-            <button onclick="inputTastierino('8')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">8</button>
-            <button onclick="inputTastierino('9')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">9</button>
-            <button onclick="inputTastierino('.')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#ecc94b; cursor:pointer;">,</button>
-            <button onclick="inputTastierino('0')" style="height:65px; font-family:'Courier New', monospace; font-size:2rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">0</button>
-            <button onclick="inputTastierino('C')" style="height:65px; font-family:'Courier New', monospace; font-size:1.8rem; font-weight:bold; border-radius:15px; border:1px solid #e53e3e; background:#1a202c; color:#e53e3e; cursor:pointer;">C</button>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;">
+            <button onclick="inputTastierino('1')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">1</button>
+            <button onclick="inputTastierino('2')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">2</button>
+            <button onclick="inputTastierino('3')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">3</button>
+            <button onclick="inputTastierino('4')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">4</button>
+            <button onclick="inputTastierino('5')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">5</button>
+            <button onclick="inputTastierino('6')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">6</button>
+            <button onclick="inputTastierino('7')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">7</button>
+            <button onclick="inputTastierino('8')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">8</button>
+            <button onclick="inputTastierino('9')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">9</button>
+            <button onclick="inputTastierino('.')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#ecc94b; cursor:pointer;">,</button>
+            <button onclick="inputTastierino('0')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">0</button>
+            <button onclick="inputTastierino('C')" style="height:60px; font-family:'Courier New', monospace; font-size:1.7rem; font-weight:bold; border-radius:15px; border:1px solid #e53e3e; background:#1a202c; color:#e53e3e; cursor:pointer;">C</button>
         </div>
         
-        <div style="display:flex; gap:15px; margin-top:25px;">
-            <button onclick="chiudiTastierino(false)" style="flex:1; height:60px; background:#e53e3e; color:white; border:none; border-radius:15px; font-family:sans-serif; font-size:1.1rem; font-weight:bold; cursor:pointer; text-transform:uppercase;">ANNULLA</button>
-            <button onclick="chiudiTastierino(true)" style="flex:1; height:60px; background:#48bb78; color:white; border:none; border-radius:15px; font-family:sans-serif; font-size:1.1rem; font-weight:bold; cursor:pointer; text-transform:uppercase;">OK</button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="chiudiTastierino(false)" style="flex:1; height:55px; background:#e53e3e; color:white; border:none; border-radius:15px; font-family:sans-serif; font-size:1.1rem; font-weight:bold; cursor:pointer; text-transform:uppercase;">ANNULLA</button>
+            <button onclick="chiudiTastierino(true)" style="flex:1; height:55px; background:#48bb78; color:white; border:none; border-radius:15px; font-family:sans-serif; font-size:1.1rem; font-weight:bold; cursor:pointer; text-transform:uppercase;">OK</button>
         </div>
     </div>
 </div>
