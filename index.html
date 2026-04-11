@@ -150,7 +150,20 @@
     padding: 5px !important;
 }
 
-
+#toast-notifica {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 30px;
+    font-size: 14px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: opacity 0.5s;
+}
 
 
 </style>
@@ -160,6 +173,11 @@
     <meta name="theme-color" content="#007bff">
 </head>
 <body>
+
+
+
+
+
 
 <div class="main-container">
     <div id="view-login" class="card">
@@ -173,31 +191,46 @@
     <div id="loading" class="hidden">Sincronizzazione Cloud...</div>
 
     <div id="lista-clienti" class="hidden">
-        <div style="display:flex; justify-content: space-between; align-items:center;">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding: 10px;">
             <h2 style="margin:0;">⚡ Gestionale</h2>
             <button class="btn-red" style="width:auto; padding:5px 10px; font-size:12px;" onclick="logout()">LOGOUT</button>
         </div>
 
-        <div class="main-actions-grid" style="margin-top:15px;">
-    <button onclick="preparaNuovo()" class="btn-nav btn-nuovo">NUOVO</button>
-    <button id="btn-modalita-elimina" onclick="toggleModalitaElimina()" class="btn-nav btn-elimina">ELIMINA</button>
-    <button onclick="esportaBackup()" class="btn-nav btn-backup">BACKUP</button>
-    <button onclick="document.getElementById('input-ripristino').click()" class="btn-nav btn-ripristina">RIPRISTINA</button>
-    <input type="file" id="input-ripristino" style="display:none" onchange="importaBackup(event)">
-</div>
-
-<div style="margin-top: 10px;">
-    <button onclick="apriGestioneListino()" class="btn-nav" style="background-color: #17a2b8 !important; color: white !important;" border-color: #4a5568;">
-        ⚙️ MATERIALI
-    </button>
-</div>
-
-        <button id="btn-conferma-elimina" class="btn-red hidden" style="background:#8b0000; width: 100%; margin-bottom: 10px;" onclick="eliminaSelezionati()">⚠️ CONFERMA CANCELLAZIONE</button>
-
-        <div class="card" style="border-left-color: #6c757d; padding: 10px;">
-            <input type="text" id="cercaInput" placeholder="🔍 Cerca Cognome o Città..." onkeyup="filtraClienti()" style="margin:0">
+        <div id="macro-aree-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 10px;">
+            <button onclick="toggleArea('area-clienti')" style="height:65px; background:#1a365d; color:white; border:none; border-radius:12px; font-size:0.7rem; font-weight:bold; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span style="font-size:1.3rem;">👤</span>CLIENTI
+            </button>
+            <button onclick="toggleArea('area-materiali')" style="height:65px; background:#1c4532; color:white; border:none; border-radius:12px; font-size:0.7rem; font-weight:bold; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span style="font-size:1.3rem;">📦</span>MATERIALI
+            </button>
+            <button onclick="toggleArea('area-sistema')" style="height:65px; background:#744210; color:white; border:none; border-radius:12px; font-size:0.7rem; font-weight:bold; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span style="font-size:1.3rem;">🛠️</span>DATI
+            </button>
         </div>
-        <div id="container-clienti"></div>
+
+        <div id="area-clienti" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
+            <button onclick="preparaNuovo()" class="btn-nav btn-nuovo" style="width:100%; margin:0; height:45px;">➕ NUOVO CLIENTE</button>
+            <button id="btn-modalita-elimina" onclick="toggleModalitaElimina()" class="btn-nav btn-elimina" style="width:100%; margin:0; height:45px;">🗑️ MODALITÀ ELIMINA</button>
+        </div>
+
+        <div id="area-materiali" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
+            <button onclick="apriGestioneListino()" class="btn-nav" style="background:#3182ce !important; color:white !important; width:100%; margin:0; height:45px; border:none; border-radius:8px;">⚙️ APRI LISTINO MATERIALI</button>
+        </div>
+
+        <div id="area-sistema" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
+            <button onclick="esportaBackup()" class="btn-nav btn-backup" style="width:100%; margin:0;">💾 BACKUP DATI</button>
+            <button onclick="document.getElementById('input-ripristino').click()" class="btn-nav btn-ripristina" style="width:100%; margin:0;">📂 RIPRISTINA DATI</button>
+            <input type="file" id="input-ripristino" style="display:none" onchange="importaBackup(event)">
+            <button onclick="forzaAggiornamentoApp()" class="btn-nav" style="background:#718096 !important; color:white !important; width:100%; margin:0;">🔄 AGGIORNA APP</button>
+        </div>
+
+        <button id="btn-conferma-elimina" class="btn-red hidden" style="background:#8b0000; width: calc(100% - 20px); margin: 10px;" onclick="eliminaSelezionati()">⚠️ CONFERMA CANCELLAZIONE</button>
+
+        <div class="card" style="border-left: 4px solid #cbd5e1; padding: 10px; margin: 15px 10px;">
+            <input type="text" id="cercaInput" placeholder="🔍 Cerca Cognome o Città..." onkeyup="filtraClienti()" style="margin:0; width:100%;">
+        </div>
+
+        <div id="container-clienti" style="padding: 0 10px;"></div>
     </div>
 
     <div id="form-cliente" class="hidden">
@@ -227,37 +260,19 @@
         </div>
         
         <div class="card" style="border-left-color: var(--warning);">
-            <h3 id="titolo-nota" style="margin:0; font-size:1em;">➕ Nota</h3>
+            <h3 style="margin:0; font-size:1em;">➕ Nota</h3>
             <input type="date" id="nota-data">
             <div style="display: flex; gap: 5px;">
                 <input type="number" id="nota-ore" placeholder="Ore">
                 <input type="number" id="nota-costi" placeholder="€ Costi">
             </div>
             <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
-            
-			
-			<div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
-    
-    <button id="btn-nota" class="btn-green" onclick="salvaNota()" 
-        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important;">
-        ➕ NOTA
-    </button>
-    
-    <button id="btn-annulla-nota" class="btn-gray hidden" onclick="resetFormNota()" 
-        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important; background-color: #dc3545 !important;">
-        ANNULLA
-    </button>
-
-    <button id="btn-mat" onclick="apriListinoPerDiario()" 
-        style="flex: 1 !important; margin: 0 !important; padding: 12px 5px !important; border: none !important; border-radius: 6px !important; font-weight: 800 !important; font-size: 1rem !important; cursor: pointer; white-space: nowrap; color: white !important; background-color: #17a2b8 !important;">
-        ➕ MATERIALI
-    </button>
-    
-</div>
-    </div>
-
-
-
+            <div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
+                <button id="btn-nota" class="btn-green" onclick="salvaNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">➕ NOTA</button>
+                <button id="btn-annulla-nota" class="btn-red hidden" onclick="resetFormNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">❌ ANNULLA</button>
+				<button id="btn-mat" onclick="apriListinoPerDiario()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; background:#17a2b8; border-radius: 6px; border:none;">➕ MATERIALI</button>
+            </div>
+        </div>
 
         <div class="card" style="border-left-color: var(--success);">
             <h3>📖 Diario Lavori</h3>
@@ -267,16 +282,13 @@
             </div>
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th class="col-data">Data</th><th class="col-small">H</th><th class="col-small">€</th><th>Note</th><th class="col-azioni">Az</th></tr></thead>
+                    <thead><tr><th class="col-data">Data</th><th class="col-small">H</th><th class="col-small">€</th><th>Note e/o Articoli</th><th class="col-azioni">Az</th></tr></thead>
                     <tbody id="corpo-diario"></tbody>
                 </table>
             </div>
         </div>
     </div>
-</div>
-
-
-
+</div> ```
 
 
 <script>
@@ -411,6 +423,54 @@ if (cacheSalvata) {
     }
 }
 
+function mostraMessaggio(testo, durata = 3000) {
+    // Rimuove notifiche precedenti se esistono
+    const vecchia = document.getElementById('toast-notifica');
+    if (vecchia) vecchia.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'toast-notifica';
+    toast.innerText = testo;
+    document.body.appendChild(toast);
+
+    // Sparisce dopo X secondi
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, durata);
+}
+
+async function forzaAggiornamentoApp() {
+    mostraMessaggio("Controllo aggiornamenti...");
+
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations.length > 0) {
+            let trovato = false;
+            for (let registration of registrations) {
+                await registration.update();
+                if (registration.waiting || registration.installing) {
+                    trovato = true;
+                    mostraMessaggio("Nuova versione trovata! Riavvio...");
+                    setTimeout(() => {
+                        registration.unregister();
+                        window.location.reload(true);
+                    }, 1500);
+                    return;
+                }
+            }
+            if (!trovato) mostraMessaggio("L'app è già aggiornata!");
+        }
+    } else {
+        // Fallback per test locale o browser vecchi
+        mostraMessaggio("Cache ricaricata!");
+        setTimeout(() => window.location.reload(true), 1500);
+    }
+}
+
+
+
+
     // DATABASE CLOUD
    function ascoltaDatiCloud() {
     const loadingEl = document.getElementById('loading');
@@ -478,9 +538,9 @@ function salvaSuCloud() {
                    style="width: 25px; height: 25px; margin: 0; flex-shrink: 0;">
             
             <div style="flex-grow: 1;">
-                <strong style="font-size: 1.1em;">${c.cognome.toUpperCase()} ${c.nome}</strong><br>
-                <small style="color: #666;">${c.titolo} - ${c.citta}</small>
-            </div>
+    <strong style="font-size: 1.1em;">${c.cognome.toUpperCase()} ${c.nome.toUpperCase()}</strong><br>
+    <small style="color: #666;">${c.titolo.toUpperCase()} - ${c.citta.toUpperCase()}</small>
+</div>
 
             <button class="btn-green ${modalitaElimina ? 'hidden' : ''}" 
                     style="width:auto; padding:8px 15px; flex-shrink: 0;" 
@@ -492,63 +552,123 @@ function salvaSuCloud() {
 
     // GESTIONE CLIENTI
     function salvaCliente() {
-        const cognome = document.getElementById('cognome').value;
-        if(!cognome) return alert("Cognome obbligatorio!");
-        const dati = {
-            id: modoModificaCliente ? (clienti[clienteAttivoIdx].id || Date.now()) : Date.now(),
-            titolo: document.getElementById('titoloLavoro').value || "Lavoro",
-            cognome: cognome,
-            nome: document.getElementById('nome').value || "",
-            indirizzo: document.getElementById('indirizzo').value || "",
-            citta: document.getElementById('citta').value || "",
-            telefono: document.getElementById('telefono').value || "",
-            diario: modoModificaCliente ? (clienti[clienteAttivoIdx].diario || []) : []
-        };
-        if(modoModificaCliente) clienti[clienteAttivoIdx] = dati;
-        else clienti.push(dati);
-        salvaSuCloud(); tornaAllaLista();
-    }
+    const cognome = document.getElementById('cognome').value.trim().toUpperCase();
+    if(!cognome) return alert("Cognome obbligatorio!");
+    
+    const dati = {
+        id: modoModificaCliente ? (clienti[clienteAttivoIdx].id || Date.now()) : Date.now(),
+        titolo: (document.getElementById('titoloLavoro').value || "LAVORO").trim().toUpperCase(),
+        cognome: cognome,
+        nome: (document.getElementById('nome').value || "").trim().toUpperCase(),
+        indirizzo: (document.getElementById('indirizzo').value || "").trim().toUpperCase(),
+        citta: (document.getElementById('citta').value || "").trim().toUpperCase(),
+        telefono: (document.getElementById('telefono').value || "").trim(),
+        diario: modoModificaCliente ? (clienti[clienteAttivoIdx].diario || []) : []
+    };
+    
+    if(modoModificaCliente) clienti[clienteAttivoIdx] = dati;
+    else clienti.push(dati);
+    
+    salvaSuCloud(); 
+    tornaAllaLista();
+}
 
     function apriCliente(index) {
-        clienteAttivoIdx = index;
-        const c = clienti[index];
-        document.getElementById('view-titolo').innerText = c.titolo;
-        document.getElementById('view-anagrafica').innerHTML = `<strong>${c.cognome} ${c.nome}</strong> | ${c.citta} | Tel: ${c.telefono}`;
-        resetFormNota(); renderDiario(); switchView('dettaglio-cliente');
-	// AGGIUNTA: Crea il "gradino" per il tasto indietro
-    	window.history.pushState(null, null, window.location.href);
-    }
+    clienteAttivoIdx = index;
+    const c = clienti[index];
+    // Forziamo il maiuscolo qui per la visualizzazione nel dettaglio
+    document.getElementById('view-titolo').innerText = c.titolo.toUpperCase();
+    document.getElementById('view-anagrafica').innerHTML = `<strong>${c.cognome.toUpperCase()} ${c.nome.toUpperCase()}</strong> | ${c.citta.toUpperCase()} | Tel: ${c.telefono}`;
+    
+    resetFormNota(); 
+    renderDiario(); 
+    switchView('dettaglio-cliente');
+    window.history.pushState(null, null, window.location.href);
+}
 
     // DIARIO NOTA
-    function salvaNota() {
-        const data = document.getElementById('nota-data').value;
-        const ore = parseFloat(document.getElementById('nota-ore').value) || 0;
-        const costi = parseFloat(document.getElementById('nota-costi').value) || 0;
-        const note = document.getElementById('nota-testo').value || "";
-        if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
-        if(rigaDiarioModificaIdx !== null) clienti[clienteAttivoIdx].diario[rigaDiarioModificaIdx] = {data, ore, costi, note};
-        else clienti[clienteAttivoIdx].diario.push({data, ore, costi, note});
-        salvaSuCloud(); resetFormNota(); renderDiario();
+	function salvaNota() {
+    const data = document.getElementById('nota-data').value;
+    const ore = parseFloat(document.getElementById('nota-ore').value) || 0;
+    const costi = parseFloat(document.getElementById('nota-costi').value) || 0;
+    const note = document.getElementById('nota-testo').value.trim(); // .trim() toglie spazi inutili all'inizio e alla fine
+
+    // VALIDAZIONE: Se il campo note è vuoto, fermiamo il salvataggio
+    if (note === "") {
+        mostraMessaggio("⚠️ Inserisci una descrizione del lavoro!");
+        // Evidenziamo il campo per attirare l'attenzione dell'utente
+        document.getElementById('nota-testo').style.border = "2px solid #e53e3e";
+        setTimeout(() => { document.getElementById('nota-testo').style.border = ""; }, 2000);
+        return; 
     }
 
-    function renderDiario() {
-        const d = (clienti[clienteAttivoIdx] && clienti[clienteAttivoIdx].diario) ? clienti[clienteAttivoIdx].diario : [];
-        const corpo = document.getElementById('corpo-diario');
-        corpo.innerHTML = ''; let hT = 0, cT = 0;
-        const dSorted = [...d].sort((a,b) => new Date(b.data) - new Date(a.data));
-        dSorted.forEach((r) => {
-            hT += r.ore; cT += r.costi;
-            let dataF = r.data ? r.data.split('-').reverse().join('/') : '---';
-            const originalIdx = d.indexOf(r);
-            corpo.innerHTML += `<tr><td>${dataF}</td><td>${r.ore}</td><td>${r.costi}</td><td>${r.note}</td>
-                <td class="col-azioni">
-                    <button class="btn-yellow" style="padding:2px 5px;" onclick="preparaModificaNota(${originalIdx})">✏️</button>
-                    <button class="btn-red" style="padding:2px 5px;" onclick="eliminaNota(${originalIdx})">🗑️</button>
-                </td></tr>`;
-        });
-        document.getElementById('tot-ore').innerText = hT;
-        document.getElementById('tot-costi').innerText = cT.toFixed(2);
+    if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+    
+    if(rigaDiarioModificaIdx !== null) {
+        clienti[clienteAttivoIdx].diario[rigaDiarioModificaIdx] = {data, ore, costi, note};
+    } else {
+        clienti[clienteAttivoIdx].diario.push({data, ore, costi, note});
     }
+    
+    salvaSuCloud(); 
+    resetFormNota(); 
+    renderDiario();
+    mostraMessaggio("✅ Nota salvata!");
+}
+
+    function renderDiario() {
+    // Recuperiamo il diario o un array vuoto se non esiste
+    const diarioOriginale = (clienti[clienteAttivoIdx] && clienti[clienteAttivoIdx].diario) ? clienti[clienteAttivoIdx].diario : [];
+    const corpo = document.getElementById('corpo-diario');
+    corpo.innerHTML = ''; 
+    
+    let hT = 0, cT = 0;
+
+    // CREIAMO UNA COPIA MAPPATA: teniamo l'indice originale insieme ai dati
+    // Questo risolve ogni problema di ordinamento e di "doppioni"
+    const dMapped = diarioOriginale.map((nota, index) => ({
+        ...nota,
+        originalIndex: index
+    }));
+
+    // ORDINAMENTO: Prima per Data (Recente -> Vecchia)
+    // Se la data è uguale, usiamo l'indice (Più alto/Ultimo inserito -> Più basso)
+    dMapped.sort((a, b) => {
+        const dataA = new Date(a.data);
+        const dataB = new Date(b.data);
+        if (dataB - dataA !== 0) {
+            return dataB - dataA; // Ordine cronologico inverso
+        }
+        return b.originalIndex - a.originalIndex; // A parità di data, l'ultimo inserito va sopra
+    });
+
+    dMapped.forEach((r) => {
+        // Forza il numero a float e applica i 2 decimali
+        const oreNum = parseFloat(r.ore || 0);
+        const costiNum = parseFloat(r.costi || 0);
+
+        hT += oreNum; 
+        cT += costiNum;
+
+        let dataF = r.data ? r.data.split('-').reverse().join('/') : '---';
+
+        corpo.innerHTML += `
+            <tr>
+                <td class="col-data">${dataF}</td>
+                <td class="col-small">${oreNum.toFixed(2)}</td>
+                <td class="col-small">${costiNum.toFixed(2)}€</td>
+                <td>${r.note || ""}</td>
+                <td class="col-azioni">
+                    <button class="btn-yellow" style="padding:2px 5px;" onclick="preparaModificaNota(${r.originalIndex})">✏️</button>
+                    <button class="btn-red" style="padding:2px 5px;" onclick="eliminaNota(${r.originalIndex})">🗑️</button>
+                </td>
+            </tr>`;
+    });
+
+    // Totali con 2 decimali fissi
+    document.getElementById('tot-ore').innerText = hT.toFixed(2);
+    document.getElementById('tot-costi').innerText = cT.toFixed(2);
+}
 
     function eliminaNota(idx) {
         if(confirm("Eliminare questa riga?")) { 
@@ -620,10 +740,16 @@ function salvaSuCloud() {
     document.getElementById('nota-costi').value = "";
     document.getElementById('nota-testo').value = "";
     
-    document.getElementById('btn-nota').innerText = "➕ AGGIUNGI NOTA";
-    document.getElementById('btn-annulla-nota').classList.add('hidden');
+    if(document.getElementById('btn-nota')) {
+        document.getElementById('btn-nota').innerText = "➕ NOTA";
+    }
+
+    // CONTROLLO DI SICUREZZA: se il tasto esiste, nascondilo
+    const btnAnnulla = document.getElementById('btn-annulla-nota');
+    if(btnAnnulla) {
+        btnAnnulla.classList.add('hidden');
+    }
     
-    // MOSTRA di nuovo il tasto materiali
     if(document.getElementById('btn-mat')) {
         document.getElementById('btn-mat').classList.remove('hidden');
     }
@@ -797,6 +923,13 @@ function renderizzaSottocategorie() {
     sottocategoriaSelezionata = null;
     const corpo = document.getElementById('corpo-listino');
     const catPadre = mioListino[categoriaSelezionata];
+
+// PULIZIA SICURA: Svuota solo se l'elemento è presente nella pagina
+    const azioni = document.getElementById('azioni-listino');
+    if (azioni) {
+        azioni.innerHTML = "";
+    }
+
 
    document.getElementById('titolo-listino').innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
@@ -1033,14 +1166,16 @@ function confermaColore(coloreScelto) {
 		const titoloHtml = `Quantità per:<br><span style="color:#48bb78; font-size:1.2rem; font-weight:bold;">${art.n}</span><br><span style="color:#ecc94b; font-size:0.9rem;">(${art.u})</span>`;
 
 apriTastierino(titoloHtml, (qta) => {
-			
             if (qta !== null && qta > 0) {
-                const costoTotale = qta * art.p;
+                // Calcolo arrotondato al centesimo
+                const costoTotale = Math.round(qta * art.p * 100) / 100;
+                
                 const nuovaRigaMateriale = {
                     data: dataOggi,
                     ore: 0,
                     costi: costoTotale,
-                    note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
+                    // Formato: "18 PZ. - NOME ARTICOLO"
+                    note: `${qta} ${art.u}. - ${art.n}`.toUpperCase()
                 };
 
                 if (!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
@@ -1048,11 +1183,11 @@ apriTastierino(titoloHtml, (qta) => {
                 inseriti++;
             }
             
-            // Passa al prossimo articolo indipendentemente se hai confermato o annullato
+            // Passa al prossimo articolo
             indiceCorrente++;
             processaProssimo();
         });
-    }
+    } // Chiude la funzione superiore (quella che contiene il ciclo o il processaProssimo)
 
     // Avvia il processo
     processaProssimo();
@@ -1127,49 +1262,51 @@ function eliminaArticolo(idArt) {
 function modificaArticolo(idArt) {
     const art = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata].articoli[idArt];
     
-    // 1. Modifica Nome
-    const nuovoNome = prompt("Modifica Nome:", art.n);
-    if (!nuovoNome) return; 
+    // 1. Modifica Nome (Usiamo prompt solo per il testo)
+    const nuovoNome = prompt("Modifica Nome Materiale:", art.n);
+    if (!nuovoNome || nuovoNome.trim() === "") return; 
     
-    // 2. Modifica Prezzo
-    const nuovoPrezzoInput = prompt("Modifica Prezzo:", art.p);
-    if (nuovoPrezzoInput === null) return;
-    const nuovoPrezzoFisico = parseFloat(nuovoPrezzoInput.toString().replace(',', '.'));
+    // 2. Modifica Prezzo con Tastierino
+    apriTastierino(`Nuovo prezzo per:<br><span style="color:#3182ce;">${nuovoNome.toUpperCase()}</span>`, (nuovoPrezzo) => {
+        if (nuovoPrezzo === null) return;
 
-    // 3. Modifica Unità con lo stesso tastierino dell'aggiunta
-    // Cerchiamo di suggerire il numero attuale dell'articolo
-    let suggerimentoUM = "3"; // Default nr
-    if (art.u === "mt") suggerimentoUM = "1";
-    if (art.u === "pz") suggerimentoUM = "2";
-    if (art.u === "nr") suggerimentoUM = "3";
-    if (art.u === "kg") suggerimentoUM = "4";
-    if (art.u === "conf") suggerimentoUM = "5";
+        // 3. Modifica Unità (Funzione interna per loop in caso di errore)
+        const chiediUMModifica = () => {
+            apriTastierino("Scegli Unità di Misura:<br>1:mt | 2:nr | 3:kg | 4:conf", (sceltaUm) => {
+                if (sceltaUm === null) return;
 
-    const umScelta = prompt("Modifica Unità di misura:\n1: mt (Metri)\n2: pz (Pezzi)\n3: nr (Numero)\n4: kg (Chilogrammi)\n5: conf (Confezione)", suggerimentoUM);
-    
-    if (umScelta === null) return;
+                let umTesto = "";
+                const scelta = Math.floor(sceltaUm);
 
-    let nuovaUnita;
-    switch(umScelta.trim()) {
-        case "1": nuovaUnita = "mt"; break;
-        case "2": nuovaUnita = "pz"; break;
-        case "3": nuovaUnita = "nr"; break;
-        case "4": nuovaUnita = "kg"; break;
-        case "5": nuovaUnita = "conf"; break;
-        default: nuovaUnita = art.u; // Se sbaglia, tiene quella che c'era già
-    }
+                switch(scelta) {
+                    case 1: umTesto = "mt"; break;
+                    case 2: umTesto = "nr"; break;
+                    case 3: umTesto = "kg"; break;
+                    case 4: umTesto = "conf"; break;
+                    default: 
+                        alert("Scelta non valida! Usa i numeri da 1 a 4.");
+                        chiediUMModifica(); 
+                        return;
+                }
 
-    // 4. Update su Firebase
-    refListino.child(categoriaSelezionata)
-              .child('sottocategorie')
-              .child(sottocategoriaSelezionata)
-              .child('articoli')
-              .child(idArt).update({
-        n: nuovoNome.toUpperCase().trim(),
-        p: nuovoPrezzoFisico,
-        u: nuovaUnita
-    }).then(() => {
-        renderizzaArticoli(); // Refresh immediato
+                // 4. Update finale su Firebase
+                refListino.child(categoriaSelezionata)
+                    .child('sottocategorie')
+                    .child(sottocategoriaSelezionata)
+                    .child('articoli')
+                    .child(idArt).update({
+                        n: nuovoNome.toUpperCase().trim(),
+                        p: nuovoPrezzo,
+                        u: umTesto
+                    }).then(() => {
+                        renderizzaArticoli(); // Refresh della lista
+                        mostraMessaggio("✏️ Articolo modificato!");
+                    }).catch(err => alert("Errore update: " + err.message));
+            });
+        };
+
+        // Lanciamo la scelta UM
+        chiediUMModifica();
     });
 }
 
@@ -1230,7 +1367,21 @@ function apriTastierino(titolo, cb) {
     document.getElementById('modal-tastierino').style.display = 'flex';
 }
 
+function toggleArea(idArea) {
+    const area = document.getElementById(idArea);
+    if(!area) return;
+    const isAlreadyOpen = area.style.display === 'flex';
 
+    // Chiude tutto
+    document.getElementById('area-clienti').style.display = 'none';
+    document.getElementById('area-materiali').style.display = 'none';
+    document.getElementById('area-sistema').style.display = 'none';
+
+    // Apre se era chiusa
+    if (!isAlreadyOpen) {
+        area.style.display = 'flex';
+    }
+}
 
 
 
