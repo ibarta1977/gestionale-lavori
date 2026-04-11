@@ -1004,49 +1004,55 @@ function confermaColore(coloreScelto) {
 }
 	
 	function confermaCarrello() {
+    if (carrelloMultiplo.length === 0) return;
+
     const dataOggi = new Date().toISOString().split('T')[0];
+    let indiceCorrente = 0;
     let inseriti = 0;
 
-    for (let percorso of carrelloMultiplo) {
-        // "Smontiamo" il percorso (es: "CAVI|UNIPOLARI|art1")
+    // Funzione interna per elaborare il carrello uno alla volta
+    function processaProssimo() {
+        if (indiceCorrente >= carrelloMultiplo.length) {
+            // Fine del carrello
+            if (inseriti > 0) {
+                salvaSuCloud();
+                renderDiario();
+                alert(`${inseriti} articoli aggiunti con successo!`);
+            }
+            carrelloMultiplo = [];
+            modalitaSelezioneMateriale = false;
+            if (typeof chiudiGestioneListino === "function") chiudiGestioneListino();
+            else if (typeof chiudiListino === "function") chiudiListino();
+            return;
+        }
+
+        const percorso = carrelloMultiplo[indiceCorrente];
         const parti = percorso.split('|');
-        const idCat = parti[0];
-        const idSub = parti[1];
-        const idArt = parti[2];
+        const art = mioListino[parti[0]].sottocategorie[parti[1]].articoli[parti[2]];
 
-        // Troviamo l'articolo corretto navigando nel listino globale
-        const art = mioListino[idCat].sottocategorie[idSub].articoli[idArt];
-        
-        const qtaInput = prompt(`Quantità per:\n${art.n}\n(${art.u})`, "1");
-        if (qtaInput === null) continue; 
+        apriTastierino(`Quantità per: ${art.n} (${art.u})`, (qta) => {
+            if (qta !== null && qta > 0) {
+                const costoTotale = qta * art.p;
+                const nuovaRigaMateriale = {
+                    data: dataOggi,
+                    ore: 0,
+                    costi: costoTotale,
+                    note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
+                };
 
-        const qta = parseFloat(qtaInput.replace(',', '.'));
-        if (isNaN(qta) || qta <= 0) continue;
-
-        const costoTotale = qta * art.p;
-        const nuovaRigaMateriale = {
-            data: dataOggi,
-            ore: 0,
-            costi: costoTotale,
-            note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
-        };
-
-        if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
-        clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
-        inseriti++;
+                if (!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+                clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
+                inseriti++;
+            }
+            
+            // Passa al prossimo articolo indipendentemente se hai confermato o annullato
+            indiceCorrente++;
+            processaProssimo();
+        });
     }
 
-    if (inseriti > 0) {
-        salvaSuCloud();
-        renderDiario();
-        alert(`${inseriti} articoli aggiunti con successo!`);
-    }
-
-    // Reset totale
-    carrelloMultiplo = [];
-    modalitaSelezioneMateriale = false;
-    if (typeof chiudiGestioneListino === "function") chiudiGestioneListino();
-    else if (typeof chiudiListino === "function") chiudiListino();
+    // Avvia il processo
+    processaProssimo();
 }
 
     function aggiungiArticolo() {
@@ -1184,6 +1190,37 @@ function selezionaMaterialePerDiario(idArt) {
 
 
 
+let valoreTastierino = "0";
+let callbackTastierino = null;
+
+function inputTastierino(t) {
+    const display = document.getElementById('tastierino-display');
+    if (t === 'C') {
+        valoreTastierino = "0";
+    } else if (t === '.') {
+        if (!valoreTastierino.includes('.')) valoreTastierino += '.';
+    } else {
+        if (valoreTastierino === "0") valoreTastierino = t;
+        else valoreTastierino += t;
+    }
+    display.innerText = valoreTastierino.replace('.', ',');
+}
+
+function chiudiTastierino(conferma) {
+    document.getElementById('modal-tastierino').style.display = 'none';
+    if (callbackTastierino) {
+        const valoreFinale = conferma ? parseFloat(valoreTastierino) : null;
+        callbackTastierino(valoreFinale);
+    }
+}
+
+function apriTastierino(titolo, cb) {
+    valoreTastierino = "0";
+    document.getElementById('tastierino-display').innerText = "0";
+    document.getElementById('tastierino-titolo').innerText = titolo;
+    callbackTastierino = cb;
+    document.getElementById('modal-tastierino').style.display = 'flex';
+}
 
 
 
@@ -1274,6 +1311,37 @@ window.onbeforeunload = function(e) {
     <div id="griglia-colori" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px;"></div>
     <button onclick="document.getElementById('modal-colori').style.display='none'" style="margin-top:15px; background:#666;">ANNULLA</button>
 </div>
+
+
+<div id="modal-tastierino" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center; font-family:sans-serif;">
+    <div style="background:white; width:90%; max-width:320px; border-radius:15px; padding:20px; box-sizing:border-box; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <div id="tastierino-titolo" style="font-size:0.9rem; color:#4a5568; margin-bottom:10px; text-align:center; font-weight:bold;">Inserisci quantità</div>
+        <div id="tastierino-display" style="width:100%; background:#edf2f7; height:60px; border-radius:10px; display:flex; align-items:center; justify-content:flex-end; padding:0 15px; font-size:2rem; font-weight:bold; color:#2d3748; margin-bottom:20px; box-sizing:border-box;">0</div>
+        
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+            <button onclick="inputTastierino('1')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">1</button>
+            <button onclick="inputTastierino('2')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">2</button>
+            <button onclick="inputTastierino('3')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">3</button>
+            <button onclick="inputTastierino('4')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">4</button>
+            <button onclick="inputTastierino('5')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">5</button>
+            <button onclick="inputTastierino('6')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">6</button>
+            <button onclick="inputTastierino('7')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">7</button>
+            <button onclick="inputTastierino('8')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">8</button>
+            <button onclick="inputTastierino('9')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">9</button>
+            <button onclick="inputTastierino('.')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">,</button>
+            <button onclick="inputTastierino('0')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">0</button>
+            <button onclick="inputTastierino('C')" style="height:60px; font-size:1.5rem; font-weight:bold; border-radius:10px; border:1px solid #cbd5e0; background:#fff;">C</button>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button onclick="chiudiTastierino(false)" style="flex:1; height:55px; background:#e53e3e; color:white; border:none; border-radius:10px; font-weight:bold;">ANNULLA</button>
+            <button onclick="chiudiTastierino(true)" style="flex:1; height:55px; background:#48bb78; color:white; border:none; border-radius:10px; font-weight:bold;">OK</button>
+        </div>
+    </div>
+</div>
+
+
+
 
 </body>
 </html>
