@@ -314,6 +314,8 @@ window.onbeforeunload = function(e) {
 
 
     let clienti = [];
+// VARIABILE per impostare carrello multiplo nel DIARIO	
+	let carrelloMultiplo = []; 
 
 // COLORI
 	
@@ -941,57 +943,110 @@ function confermaColore(coloreScelto) {
     const cat = mioListino[categoriaSelezionata];
     const sub = cat.sottocategorie[sottocategoriaSelezionata];
 
-    // Toolbar Articoli
-   document.getElementById('titolo-listino').innerHTML = `
+    document.getElementById('titolo-listino').innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
         <div style="display: flex; flex-direction: column; justify-content: center;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">${cat.nome}</span>
             <span style="font-weight: bold; font-size: 1.1rem; line-height: 1.2;">${sub.nome}</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
-            <button onclick="renderizzaSottocategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="renderizzaSottocategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 INDIETRO
             </button>
         </div>
-    </div>
-`;
+    </div>`;
 
     const arts = sub.articoli || {};
     const artsIds = Object.keys(arts);
-
     let html = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">`;
     
     artsIds.forEach(idArt => {
         const a = arts[idArt];
-// Rendiamo il nome cliccabile aggiungendo l'onclick e un po' di stile
-html += `
-    <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 12px 5px; cursor: pointer; color: #2b6cb0;" onclick="selezionaMaterialePerDiario('${idArt}')"> 
-            <strong>${a.n}</strong>
-        </td>
-        <td style="padding: 12px 5px; text-align: right;">
-            €${parseFloat(a.p).toFixed(2)}<br><small>${a.u}</small>
-        </td>
-        ${modalitaEdit ? `
-        <td style="padding: 12px 5px; text-align: right;">
-            <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none;">✏️</button>
-            <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none;">🗑️</button>
-        </td>` : ''}
-    </tr>`;
+        const percorsoCorrente = `${categoriaSelezionata}|${sottocategoriaSelezionata}|${idArt}`;
+		const isSelezionato = carrelloMultiplo.includes(percorsoCorrente);
+        const backgroundRow = isSelezionato ? '#c6f6d5' : 'transparent';
+
+        html += `
+        <tr style="border-bottom: 1px solid #eee; background-color: ${backgroundRow}; transition: background 0.3s;">
+            <td style="padding: 12px 5px; cursor: pointer; color: #2b6cb0;" onclick="selezionaMaterialePerDiario('${idArt}')"> 
+                <strong>${isSelezionato ? '✅ ' : ''}${a.n}</strong>
+            </td>
+            <td style="padding: 12px 5px; text-align: right;">
+                €${parseFloat(a.p).toFixed(2)}<br><small>${a.u}</small>
+            </td>
+            ${modalitaEdit ? `
+            <td style="padding: 12px 5px; text-align: right;">
+                <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none;">✏️</button>
+                <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none;">🗑️</button>
+            </td>` : ''}
+        </tr>`;
     });
     html += `</table>`;
-
     corpo.innerHTML = html;
 
-    // IL TASTO AGGIUNGI APPARE SOLO QUI!
-    azioni.innerHTML = `
-        <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
-            + AGGIUNGI ARTICOLO IN ${sub.nome}
-        </button>
-    `;
+    if (carrelloMultiplo.length > 0) {
+        azioni.innerHTML = `
+            <button onclick="confermaCarrello()" style="width:100%; padding:15px; font-weight:bold; background:#48bb78; color:white; border:none; border-radius:8px; margin-bottom:10px; font-size:1.1rem; cursor:pointer;">
+                ✅ CONFERMA ${carrelloMultiplo.length} ARTICOLI
+            </button>
+            <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
+                + AGGIUNGI NUOVO ARTICOLO
+            </button>`;
+    } else {
+        azioni.innerHTML = `
+            <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
+                + AGGIUNGI ARTICOLO IN ${sub.nome}
+            </button>`;
+    }
+}
+	
+	function confermaCarrello() {
+    const dataOggi = new Date().toISOString().split('T')[0];
+    let inseriti = 0;
+
+    for (let percorso of carrelloMultiplo) {
+        // "Smontiamo" il percorso (es: "CAVI|UNIPOLARI|art1")
+        const parti = percorso.split('|');
+        const idCat = parti[0];
+        const idSub = parti[1];
+        const idArt = parti[2];
+
+        // Troviamo l'articolo corretto navigando nel listino globale
+        const art = mioListino[idCat].sottocategorie[idSub].articoli[idArt];
+        
+        const qtaInput = prompt(`Quantità per:\n${art.n}\n(${art.u})`, "1");
+        if (qtaInput === null) continue; 
+
+        const qta = parseFloat(qtaInput.replace(',', '.'));
+        if (isNaN(qta) || qta <= 0) continue;
+
+        const costoTotale = qta * art.p;
+        const nuovaRigaMateriale = {
+            data: dataOggi,
+            ore: 0,
+            costi: costoTotale,
+            note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
+        };
+
+        if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+        clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
+        inseriti++;
+    }
+
+    if (inseriti > 0) {
+        salvaSuCloud();
+        renderDiario();
+        alert(`${inseriti} articoli aggiunti con successo!`);
+    }
+
+    // Reset totale
+    carrelloMultiplo = [];
+    modalitaSelezioneMateriale = false;
+    if (typeof chiudiGestioneListino === "function") chiudiGestioneListino();
+    else if (typeof chiudiListino === "function") chiudiListino();
 }
 
     function aggiungiArticolo() {
@@ -1107,46 +1162,24 @@ function modificaArticolo(idArt) {
 
 function apriListinoPerDiario() {
     modalitaSelezioneMateriale = true;
-    // Chiude eventuali modalità edit del listino per sicurezza
     modalitaEdit = false; 
+    carrelloMultiplo = []; // Reset carrello ogni volta che apri il listino
     apriGestioneListino(); 
 }
 
 function selezionaMaterialePerDiario(idArt) {
-    // Se non siamo partiti dal diario, non fare nulla
-    if (!modalitaSelezioneMateriale) return;
+    if (modalitaEdit) return;
 
-    const art = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata].articoli[idArt];
+    // Creiamo una chiave unica che contiene tutto il percorso
+    const percorsoArticolo = `${categoriaSelezionata}|${sottocategoriaSelezionata}|${idArt}`;
     
-    const qtaInput = prompt(`Inserisci quantità per:\n${art.n}\nPrezzo: €${art.p} / ${art.u}`, "1");
-    if (qtaInput === null || qtaInput.trim() === "") return;
-
-    const qta = parseFloat(qtaInput.replace(',', '.'));
-    if (isNaN(qta)) return alert("Quantità non valida");
-
-    const costoTotale = qta * art.p;
-    const dataOggi = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD per il tuo input date
-
-    // Creiamo la riga per il diario (usando le tue sigle n, p, u)
-    const nuovaRigaMateriale = {
-        data: dataOggi,
-        ore: 0,
-        costi: costoTotale,
-        note: `${qta} ${art.u} x ${art.n}`.toUpperCase()
-    };
-
-    // Inseriamo nel diario del cliente attivo
-    if(!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
-    clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
-
-    // Salvataggio e aggiornamento (usando le tue funzioni esistenti)
-    salvaSuCloud();
-    renderDiario();
-    
-    // Reset e chiusura
-    modalitaSelezioneMateriale = false;
-    chiudiListino(); 
-    alert("Materiale aggiunto!");
+    const index = carrelloMultiplo.indexOf(percorsoArticolo);
+    if (index === -1) {
+        carrelloMultiplo.push(percorsoArticolo);
+    } else {
+        carrelloMultiplo.splice(index, 1);
+    }
+    renderizzaArticoli();
 }
 
 
