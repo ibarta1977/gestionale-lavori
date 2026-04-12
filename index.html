@@ -500,18 +500,28 @@ async function forzaAggiornamentoApp() {
     // MODIFICATA: Più robusta
 function salvaSuCloud() {
     const user = auth.currentUser;
+    const loadingEl = document.getElementById('loading'); // Se vuoi usare il loader
     
-    // 1. Salvataggio locale immediato (fondamentale!)
+    // 1. Salvataggio locale immediato
     localStorage.setItem('cache_clienti_globali', JSON.stringify(clienti));
-    renderLista(clienti); // Aggiorna subito la UI senza aspettare il cloud
+    renderLista(clienti); 
 
-    // 2. Se siamo online e loggati, spingiamo sul cloud
+    // 2. Gestione Cloud
     if (user && navigator.onLine) {
+        // Tentativo di upload
         db.ref('clienti_globali/' + user.uid).set(clienti)
-            .then(() => console.log("Cloud aggiornato"))
-            .catch(err => console.warn("Errore cloud (ma salvato in locale):", err));
+            .then(() => {
+                console.log("Cloud aggiornato correttamente");
+                // Qui potresti mettere un micro-messaggio "Sincronizzato"
+            })
+            .catch(err => {
+                console.warn("Errore temporaneo cloud:", err);
+                mostraMessaggio("⚠️ Errore sincronizzazione Cloud");
+            });
     } else {
+        // Se siamo offline o non loggati
         console.log("Salvato solo in locale (Offline)");
+        mostraMessaggio("📡 Salvato in locale (Offline)");
     }
 }
 
@@ -1395,12 +1405,25 @@ function toggleArea(idArea) {
 
     // Forza la sincronizzazione quando torna il segnale internet
     window.addEventListener('online', () => {
-        console.log("Connessione ripristinata! Aggiorno i dati...");
+        console.log("Connessione ripristinata! Sincronizzazione in corso...");
+        mostraMessaggio("🌐 Connessione ripristinata! Sincronizzazione...");
+
+        // 1. Recuperiamo i dati più recenti che abbiamo salvato nel telefono
+        const cache = localStorage.getItem('cache_clienti_globali');
+        if (cache) {
+            clienti = JSON.parse(cache);
+        }
+
+        // 2. Li spariamo su Firebase (così il Cloud si aggiorna con le nostre note offline)
+        salvaSuCloud(); 
+
+        // 3. Solo a questo punto riattiviamo l'ascolto per eventuali modifiche esterne
         ascoltaDatiCloud(); 
     });
 
     window.addEventListener('offline', () => {
         console.log("Sei passato in modalità offline.");
+        mostraMessaggio("📡 Sei offline. Le modifiche verranno salvate nel telefono.");
     });
 
 // 1. GESTIONE TASTO INDIETRO CON AVVISO BLOCCANTE
