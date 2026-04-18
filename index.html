@@ -226,9 +226,15 @@
             style="width:100%; margin:0;">⚙️ GESTISCI: ELIMINA O EDITA</button>
 </div>
 
-        <div id="area-materiali" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
-            <button onclick="apriGestioneListino()" class="btn-nav" style="background:#3182ce !important; color:white !important; width:100%; margin:0; border:none; border-radius:8px;">⚙️ APRI LISTINO MATERIALI</button>
-        </div>
+       <div id="area-materiali" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
+    <button onclick="apriGestioneListino()" class="btn-nav" style="background:#276749 !important; color:white !important; width:100%; margin:0; border:none; border-radius:8px;">📦 APRI LISTINO MATERIALI</button>
+    
+    <button onclick="esportaMaterialiCSV()" class="btn-nav" style="background:#2f855a !important; color:white !important; width:100%; margin:0;">📤 ESPORTA LISTINO (CSV)</button>
+    
+    <button onclick="document.getElementById('input-import-csv').click()" class="btn-nav" style="background:#d39e00 !important; color:white !important; width:100%; margin:0;">📥 IMPORTA LISTINO (CSV)</button>
+    
+    <input type="file" id="input-import-csv" style="display:none" accept=".csv" onchange="importaMaterialiCSV(event)">
+</div>
 
         <div id="area-sistema" style="display:none; flex-direction:column; gap:8px; padding:12px; background:#edf2f7; border-radius:12px; margin: 10px; border:1px solid #cbd5e1;">
             <button onclick="esportaBackup()" class="btn-nav btn-backup" style="width:100%; margin:0;">💾 BACKUP DATI</button>
@@ -279,35 +285,51 @@
             </div>
         </div>
         
-        <div class="card" style="border-left-color: var(--warning);">
-            <h3 style="margin:0; font-size:1em;">➕ Nota</h3>
-            <input type="date" id="nota-data">
-            <div style="display: flex; gap: 5px;">
-                <input type="number" id="nota-ore" placeholder="Ore">
-                <input type="number" id="nota-costi" placeholder="€ Costi">
-            </div>
-            <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
-            <div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
-                <button id="btn-nota" class="btn-green" onclick="salvaNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">➕ NOTA</button>
-                <button id="btn-annulla-nota" class="btn-red hidden" onclick="resetFormNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">❌ ANNULLA</button>
-				<button id="btn-mat" onclick="apriListinoPerDiario()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; background:#17a2b8; border-radius: 6px; border:none;">➕ MATERIALI</button>
-            </div>
-        </div>
 
-        <div class="card" style="border-left-color: var(--success);">
-            <h3>📖 Diario Lavori</h3>
-            <div class="totali-box">
-                <div>Ore: <span id="tot-ore">0</span></div>
-                <div>Costi: <span id="tot-costi">0</span> €</div>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th class="col-data">Data</th><th class="col-small">H</th><th class="col-small">€</th><th>Note e/o Articoli</th><th class="col-azioni">Az</th></tr></thead>
-                    <tbody id="corpo-diario"></tbody>
-                </table>
-            </div>
-        </div>
+<div class="card" style="border-left-color: var(--warning);">
+    <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;">
+        <span>📝</span> Nota
+    </h3>
+    
+    <input type="date" id="nota-data">
+    <div style="display: flex; gap: 5px;">
+        <input type="number" id="nota-ore" placeholder="Ore">
+        <input type="number" id="nota-costi" placeholder="€ Costi">
     </div>
+    <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
+    
+    <div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
+        <button id="btn-nota" class="btn-green" onclick="salvaNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">➕ NOTA</button>
+        <button id="btn-annulla-nota" class="btn-red hidden" onclick="resetFormNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">❌ ANNULLA</button>
+        <button id="btn-mat" onclick="apriListinoPerDiario()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; background:#17a2b8; border-radius: 6px; border:none;">➕ MATERIALI</button>
+    </div>
+</div>
+
+<div class="card" style="border-left-color: var(--success);">
+    <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;">
+        <span>📖</span> Diario Lavori
+    </h3>
+    
+    <div class="totali-box">
+        <div>Ore: <span id="tot-ore">0</span></div>
+        <div>Costi: <span id="tot-costi">0</span> €</div>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-data">Data</th>
+                    <th class="col-small">H</th>
+                    <th class="col-small">€</th>
+                    <th>Note e/o Articoli</th>
+                    <th class="col-azioni">Az</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-diario"></tbody>
+        </table>
+		</div>
+	</div>
+ </div>
 </div>
 
 
@@ -1232,13 +1254,22 @@ function confermaColore(coloreScelto) {
     </div>`;
 
     const arts = sub.articoli || {};
-    const artsIds = Object.keys(arts);
+    
+    // --- MODIFICA CHIRURGICA PER ORDINAMENTO ---
+    // Trasformiamo le chiavi in un array e le ordiniamo in base al campo .pos dell'articolo
+    const artsIds = Object.keys(arts).sort((a, b) => {
+        const posA = arts[a].pos !== undefined ? parseInt(arts[a].pos) : 999;
+        const posB = arts[b].pos !== undefined ? parseInt(arts[b].pos) : 999;
+        return posA - posB;
+    });
+    // --------------------------------------------
+
     let html = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">`;
     
     artsIds.forEach(idArt => {
         const a = arts[idArt];
         const percorsoCorrente = `${categoriaSelezionata}|${sottocategoriaSelezionata}|${idArt}`;
-		const isSelezionato = carrelloMultiplo.includes(percorsoCorrente);
+        const isSelezionato = carrelloMultiplo.includes(percorsoCorrente);
         const backgroundRow = isSelezionato ? '#c6f6d5' : 'transparent';
 
         html += `
@@ -1415,7 +1446,7 @@ function modificaArticolo(idArt) {
             const umAttualeValore = umMappa[art.u] || 0;
 
             // Passiamo umAttualeValore come terzo parametro
-            apriTastierino("Scegli Unità di Misura:<br>1:mt | 2:nr | 3:kg | 4:conf", (sceltaUm) => {
+            apriTastierino("Scegli Unità di Misura", (sceltaUm) => {
                 if (sceltaUm === null) return;
 
                 let umTesto = "";
@@ -1484,6 +1515,9 @@ let primaDigitazione = false; // Variabile di controllo
 function inputTastierino(t) {
     const display = document.getElementById('tastierino-display');
     
+	// Mappa per la visualizzazione testuale delle UM
+    const nomiUM = { "1": "MT", "2": "NR", "3": "KG", "4": "CONF" };
+	
     if (t === 'C') {
         valoreTastierino = "0";
         primaDigitazione = false;
@@ -1507,7 +1541,17 @@ function inputTastierino(t) {
             else valoreTastierino += t;
         }
     }
-    display.innerText = valoreTastierino.replace('.', ',');
+	
+	// VISUALIZZAZIONE OTTIMIZZATA
+    const titoloElement = document.getElementById('tastierino-titolo');
+    const titoloTesto = titoloElement ? titoloElement.innerText.toLowerCase() : "";
+    
+    // Controlliamo se nel titolo c'è "unità" (minuscolo, così non sbaglia mai)
+    if (titoloTesto.includes("unità") && nomiUM[valoreTastierino]) {
+        display.innerText = nomiUM[valoreTastierino];
+    } else {
+        display.innerText = valoreTastierino.replace('.', ',');
+    }
 }
 
 function chiudiTastierino(conferma) {
@@ -1531,6 +1575,14 @@ function apriTastierino(titolo, cb, valoreIniziale) {
     // 3. Diciamo al tastierino che siamo all'inizio (così se premi un numero cancella il vecchio)
     primaDigitazione = true; 
     
+    // CONTROLLO UM: Se il titolo contiene "Unità", mostriamo i tasti rapidi
+    const areaUM = document.getElementById('area-um-rapida');
+    if (titolo.includes("Unità")) {
+        areaUM.style.display = 'grid';
+    } else {
+        areaUM.style.display = 'none';
+    }
+
     document.getElementById('modal-tastierino').style.display = 'flex';
 }
 
@@ -1575,6 +1627,188 @@ function ciclaOrdinamento() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function esportaMaterialiCSV() {
+    if (!mioListino) {
+        alert("Nessun dato da esportare.");
+        return;
+    }
+
+    // Intestazione del file CSV
+    // Cambiato ID in Codice per evitare errore SYLK di Excel (con aggiunta colonna Posizione)
+    let csvContent = "Codice_Cat;Nome_Cat;Colore_Cat;Codice_Sub;Nome_Sub;Colore_Sub;Nome_Art;Prezzo;UM;Posizione\n";
+    
+    // Usiamo incrementi di 10 (es: 10, 20, 30) è più comodo per inserimenti futuri manuali
+    let contatorePos = 10; 
+
+    // Cicliamo tra i dati per costruire le righe
+    for (let catKey in mioListino) {
+        const cat = mioListino[catKey];
+        const nomeCat = (cat.nome || "").replace(/;/g, ",");
+        const colCat = cat.colore || "#3182ce";
+
+        if (cat.sottocategorie) {
+            for (let subKey in cat.sottocategorie) {
+                const sub = cat.sottocategorie[subKey];
+                const nomeSub = (sub.nome || "").replace(/;/g, ",");
+                const colSub = sub.colore || "#4a5568";
+
+                if (sub.articoli) {
+                    for (let artKey in sub.articoli) {
+                        const art = sub.articoli[artKey];
+                        
+                        // Pulizia dati: togliamo eventuali punti e virgola dai nomi per non rompere il CSV
+                        const n = (art.n || "").replace(/;/g, ",");
+                        const p = art.p || 0;
+                        const u = art.u || "";
+                        
+                        // Scriviamo riga con ID, Colori e la posizione calcolata
+                        csvContent += `${catKey};${nomeCat};${colCat};${subKey};${nomeSub};${colSub};${n};${p};${u};${contatorePos}\n`;
+                        
+                        // Incrementiamo il contatore per il prossimo articolo
+                        contatorePos += 10;
+                    }
+                }
+            }
+        }
+    }
+
+    // Creazione del file e download
+    // Il "\ufeff" all'inizio serve a far capire a Excel che è UTF-8 senza errori
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", "listino_materiali.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+
+
+function importaMaterialiCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const contenuto = e.target.result;
+            const righe = contenuto.split(/\r?\n/);
+            const refListinoBase = refListino; 
+            let contatoreErrori = 0;
+            let articoliProcessati = 0;
+
+            for (let i = 1; i < righe.length; i++) {
+                if (righe[i].trim() === "") continue;
+
+                const colonne = righe[i].split(";");
+                
+                // Controllo se mancano colonne fondamentali
+                if (colonne.length < 9) {
+                    console.error(`Riga ${i+1}: Formato non valido (colonne insufficienti).`);
+                    contatoreErrori++;
+                    continue;
+                }
+
+                const [idCat, nomeCat, colCat, idSub, nomeSub, colSub, nomeArt, prezzo, um, posizione] = colonne;
+
+                // VALIDAZIONE DATI CRITICI
+                if (!idCat || !idSub || !nomeArt) {
+                    console.error(`Riga ${i+1}: Mancano dati obbligatori (ID o Nome Articolo).`);
+                    contatoreErrori++;
+                    continue;
+                }
+
+                // Gestione Prezzo: se vuoto o non numerico, impostiamo 0
+                let pFinale = parseFloat(prezzo.toString().replace(',', '.'));
+                if (isNaN(pFinale)) pFinale = 0;
+
+                const datiArticolo = {
+                    n: nomeArt.toUpperCase().trim(),
+                    p: pFinale,
+                    u: (um || "nr").toLowerCase().trim(),
+                    pos: parseInt(posizione) || 999
+                };
+
+                // 1. Aggiorna Categoria
+                refListinoBase.child(idCat).update({
+                    nome: nomeCat.toUpperCase().trim(),
+                    colore: colCat.trim()
+                });
+
+                // 2. Aggiorna Sottocategoria
+                refListinoBase.child(idCat).child('sottocategorie').child(idSub).update({
+                    nome: nomeSub.toUpperCase().trim(),
+                    colore: colSub.trim()
+                });
+
+                // 3. Sincronizzazione Articolo
+                const refArticoli = refListinoBase.child(idCat).child('sottocategorie').child(idSub).child('articoli');
+                let artIdEsistente = null;
+                const articoliLocali = mioListino[idCat]?.sottocategorie[idSub]?.articoli || {};
+                
+                for (let idKey in articoliLocali) {
+                    if (articoliLocali[idKey].n === datiArticolo.n) {
+                        artIdEsistente = idKey;
+                        break;
+                    }
+                }
+
+                if (artIdEsistente) {
+                    refArticoli.child(artIdEsistente).update(datiArticolo);
+                } else {
+                    refArticoli.push(datiArticolo);
+                }
+                articoliProcessati++;
+            }
+            
+            // Messaggio finale dettagliato
+            if (contatoreErrori > 0) {
+                alert(`✅ Importazione completata con avvisi!\n- Articoli ok: ${articoliProcessati}\n- Righe saltate per errori: ${contatoreErrori}\n(Controlla la console del browser per i dettagli)`);
+            } else {
+                mostraMessaggio(`✅ Importazione di ${articoliProcessati} articoli riuscita!`);
+            }
+
+        } catch (err) {
+            alert("❌ Errore critico durante l'importazione: " + err.message);
+        }
+        event.target.value = "";
+    };
+    reader.readAsText(file);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // SERVICE WORKER (PWA)
     if ('serviceWorker' in navigator) { 
         navigator.serviceWorker.register('sw.js'); 
@@ -1602,6 +1836,32 @@ function ciclaOrdinamento() {
         console.log("Sei passato in modalità offline.");
         mostraMessaggio("📡 Sei offline. Le modifiche verranno salvate nel telefono.");
     });
+
+// Gestione tastiera PC per il Tastierino
+document.addEventListener('keydown', function(event) {
+    const modal = document.getElementById('modal-tastierino');
+    // Eseguiamo solo se il tastierino è visibile
+    if (modal && modal.style.display === 'flex') {
+        const key = event.key;
+
+        if (key >= '0' && key <= '9') {
+            inputTastierino(key);
+        } else if (key === '.' || key === ',') {
+            inputTastierino('.');
+        } else if (key === 'Backspace') {
+            inputTastierino('C'); // O potremmo fare un delete singolo, ma 'C' è più sicuro
+       } else if (key === 'Enter') {
+            event.preventDefault(); // BLOCCA l'invio al form sottostante
+            event.stopPropagation(); // Impedisce all'evento di "salire"
+            chiudiTastierino(true);
+        } else if (key === 'Escape') {
+            chiudiTastierino(false);
+        }
+    }
+}, true); // Il "true" finale aiuta a catturare l'evento prima degli altri bottoni
+
+
+
 
 // 1. GESTIONE TASTO INDIETRO CON AVVISO BLOCCANTE
 window.history.pushState(null, null, window.location.href);
@@ -1680,6 +1940,13 @@ window.onbeforeunload = function(e) {
             Quantità per:
         </div>
         <div id="tastierino-display" style="width:100%; background:#2d3748; height:65px; border-radius:12px; display:flex; align-items:center; justify-content:flex-end; padding:0 20px; font-family:'Courier New', monospace; font-size:2.6rem; font-weight:bold; color:#fff; margin-bottom:15px; box-sizing:border-box; border:1px solid #4a5568; text-shadow: 0 0 10px rgba(255,255,255,0.5);">0</div>
+		
+		<div id="area-um-rapida" style="display:none; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0;">
+    <button onclick="primaDigitazione=true;inputTastierino('1')" style="background:#3182ce; color:white; padding:15px 5px; border-radius:8px; border:none; font-weight:bold; font-size:16px;">MT</button>
+    <button onclick="primaDigitazione=true;inputTastierino('2')" style="background:#3182ce; color:white; padding:15px 5px; border-radius:8px; border:none; font-weight:bold; font-size:16px;">NR</button>
+    <button onclick="primaDigitazione=true;inputTastierino('3')" style="background:#3182ce; color:white; padding:15px 5px; border-radius:8px; border:none; font-weight:bold; font-size:16px;">KG</button>
+    <button onclick="primaDigitazione=true;inputTastierino('4')" style="background:#3182ce; color:white; padding:15px 5px; border-radius:8px; border:none; font-weight:bold; font-size:16px;">CONF</button>
+	</div>
         
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;">
             <button onclick="inputTastierino('1')" style="height:60px; font-family:'Courier New', monospace; font-size:1.9rem; font-weight:bold; border-radius:15px; border:1px solid #ecc94b; background:#1a202c; color:#fff; cursor:pointer;">1</button>
