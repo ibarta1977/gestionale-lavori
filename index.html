@@ -999,9 +999,17 @@ function renderizzaCategorie() {
     
     const corpo = document.getElementById('corpo-listino');
     const azioni = document.getElementById('azioni-listino');
+    const cats = mioListino || {};
     azioni.innerHTML = ''; 
     
-   document.getElementById('titolo-listino').innerHTML = `
+    // 1. ORDINAMENTO: Trasformiamo le chiavi in un array ordinato per "pos"
+    const categorieIds = Object.keys(cats).sort((a, b) => {
+        const posA = cats[a].pos !== undefined ? parseInt(cats[a].pos) : 999;
+        const posB = cats[b].pos !== undefined ? parseInt(cats[b].pos) : 999;
+        return posA - posB;
+    });
+
+    document.getElementById('titolo-listino').innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 10px; box-sizing: border-box;">
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding-right: 10px;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">Materiali</span>
@@ -1009,20 +1017,18 @@ function renderizzaCategorie() {
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
             <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 95px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">
-                EDIT ⚙️
+                ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
             <button onclick="chiudiGestioneListino()" style="background: #e53e3e; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 95px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">
                 CHIUDI ✖
             </button>
         </div>
-    </div>
-`;
+    </div>`;
 
     let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 15px 5px;">';
-    const categorieIds = Object.keys(mioListino || {});
     
     categorieIds.forEach(id => {
-        const cat = mioListino[id];
+        const cat = cats[id];
         const sfondo = cat.colore || '#edf2f7';
         const testoColore = getContrasto(sfondo);
 
@@ -1034,19 +1040,34 @@ function renderizzaCategorie() {
                 </button>
 
                 ${modalitaEdit ? `
-                    <button onclick="cambiaColore('cat', '${id}')" 
-        style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
-    🎨
-</button>
-                    <button onclick="rinominaLivello('cat', '${id}')" style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
-                    <button onclick="eliminaLivello('cat', '${id}')" style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
-                ` : ''}
+    <button onclick="event.stopPropagation(); cambiaColore('cat', '${id}')" 
+            style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
+        🎨
+    </button>
+    
+    <button onclick="event.stopPropagation(); rinominaLivello('cat', '${id}')" 
+            style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
+    
+    <button onclick="event.stopPropagation(); eliminaLivello('cat', '${id}')" 
+            style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
+
+    <button onclick="event.stopPropagation(); muoviCategoria('${id}', 'indietro')" 
+            style="position: absolute; bottom: -8px; left: 2px; background: white; border: 1px solid #3182ce; width: 34px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 12; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+        <div style="width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 7px solid #3182ce;"></div>
+    </button>
+
+    <button onclick="event.stopPropagation(); muoviCategoria('${id}', 'avanti')" 
+            style="position: absolute; bottom: -8px; left: 42px; background: white; border: 1px solid #3182ce; width: 34px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 12; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+        <div style="width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid #3182ce;"></div>
+    </button>
+` : ''}
             </div>`;
     });
 
     html += `<button class="btn-nuovo" style="height: 80px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px;" onclick="aggiungiCategoria()">+ NUOVA</button></div>`;
     corpo.innerHTML = html;
 }
+
 
     function aggiungiCategoria() {
         const nome = prompt("Inserisci il nome della Categoria (es: CAVI):");
@@ -1063,6 +1084,55 @@ function renderizzaCategorie() {
         categoriaSelezionata = id;
         renderizzaSottocategorie();
     }
+
+
+
+function muoviCategoria(idCat, direzione) {
+    const cats = mioListino || {};
+    // Creiamo l'array delle chiavi ordinato in base alla posizione attuale
+    let listaOrdinata = Object.keys(cats).sort((a, b) => {
+        const pA = cats[a].pos !== undefined ? parseInt(cats[a].pos) : 999;
+        const pB = cats[b].pos !== undefined ? parseInt(cats[b].pos) : 999;
+        return pA - pB;
+    });
+
+    const indiceAttuale = listaOrdinata.indexOf(idCat);
+    if (indiceAttuale === -1) return;
+
+    // Calcoliamo la nuova destinazione
+    let nuovoIndice = direzione === 'indietro' ? indiceAttuale - 1 : indiceAttuale + 1;
+
+    // Se proviamo ad andare oltre i limiti, fermiamo tutto
+    if (nuovoIndice < 0 || nuovoIndice >= listaOrdinata.length) return;
+
+    // Rimuoviamo l'id dalla posizione vecchia e lo inseriamo in quella nuova
+    listaOrdinata.splice(indiceAttuale, 1);
+    listaOrdinata.splice(nuovoIndice, 0, idCat);
+
+    // Prepariamo l'oggetto per l'aggiornamento massivo su Firebase
+    const updates = {};
+    listaOrdinata.forEach((id, index) => {
+        // Assegniamo posizioni 10, 20, 30... (molto più pulito)
+        updates[id + '/pos'] = (index + 1) * 10;
+    });
+
+    // Aggiorniamo Firebase
+    refListino.update(updates).then(() => {
+        console.log("Ordine categorie sincronizzato");
+    }).catch(error => {
+        console.error("Errore durante lo spostamento:", error);
+    });
+}
+
+
+
+
+
+
+
+
+
+
 
     // --- LIVELLO 2: SOTTOCATEGORIE ---
 let modalitaEdit = false; // Variabile globale per lo stato dei tasti
