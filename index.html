@@ -739,33 +739,27 @@ function modificaClienteRapido(index) {
 }
 
     function renderDiario() {
-    // Recuperiamo il diario o un array vuoto se non esiste
     const diarioOriginale = (clienti[clienteAttivoIdx] && clienti[clienteAttivoIdx].diario) ? clienti[clienteAttivoIdx].diario : [];
     const corpo = document.getElementById('corpo-diario');
     corpo.innerHTML = ''; 
     
     let hT = 0, cT = 0;
 
-    // CREIAMO UNA COPIA MAPPATA: teniamo l'indice originale insieme ai dati
-    // Questo risolve ogni problema di ordinamento e di "doppioni"
     const dMapped = diarioOriginale.map((nota, index) => ({
         ...nota,
         originalIndex: index
     }));
 
-    // ORDINAMENTO: Prima per Data (Recente -> Vecchia)
-    // Se la data è uguale, usiamo l'indice (Più alto/Ultimo inserito -> Più basso)
     dMapped.sort((a, b) => {
         const dataA = new Date(a.data);
         const dataB = new Date(b.data);
         if (dataB - dataA !== 0) {
-            return dataB - dataA; // Ordine cronologico inverso
+            return dataB - dataA;
         }
-        return b.originalIndex - a.originalIndex; // A parità di data, l'ultimo inserito va sopra
+        return b.originalIndex - a.originalIndex;
     });
 
     dMapped.forEach((r) => {
-        // Forza il numero a float e applica i 2 decimali
         const oreNum = parseFloat(r.ore || 0);
         const costiNum = parseFloat(r.costi || 0);
 
@@ -774,12 +768,20 @@ function modificaClienteRapido(index) {
 
         let dataF = r.data ? r.data.split('-').reverse().join('/') : '---';
 
+        // --- LOGICA DI FORMATTAZIONE NOTA ---
+        let notaFormattata = r.note || "";
+        // Se la nota contiene il prezzo tra parentesi, lo mettiamo a capo e più piccolo
+        if (notaFormattata.includes(' (€')) {
+            notaFormattata = notaFormattata.replace(' (€', '<br><small style="color: #718096; font-size: 0.8rem;">(€');
+            notaFormattata = notaFormattata.replace(')', ')</small>');
+        }
+
         corpo.innerHTML += `
             <tr>
                 <td class="col-data">${dataF}</td>
                 <td class="col-small">${oreNum.toFixed(2)}</td>
-                <td class="col-small">${costiNum.toFixed(2)}€</td>
-                <td>${r.note || ""}</td>
+                <td class="col-small" style="font-weight:bold;">${costiNum.toFixed(2)}€</td>
+                <td style="line-height: 1.2; padding: 8px 5px;">${notaFormattata}</td>
                 <td class="col-azioni">
                     <button class="btn-yellow" style="padding:2px 5px;" onclick="preparaModificaNota(${r.originalIndex})">✏️</button>
                     <button class="btn-red" style="padding:2px 5px;" onclick="eliminaNota(${r.originalIndex})">🗑️</button>
@@ -787,17 +789,9 @@ function modificaClienteRapido(index) {
             </tr>`;
     });
 
-    // Totali con 2 decimali fissi
     document.getElementById('tot-ore').innerText = hT.toFixed(2);
     document.getElementById('tot-costi').innerText = cT.toFixed(2);
 }
-
-    function eliminaNota(idx) {
-        if(confirm("Eliminare questa riga?")) { 
-            clienti[clienteAttivoIdx].diario.splice(idx, 1); 
-            salvaSuCloud(); renderDiario(); 
-        }
-    }
 
     // ELIMINAZIONE MULTIPLA E DIVENTA ANCHE EDITA
     
@@ -1062,9 +1056,25 @@ function renderizzaCategorie() {
     </button>
 ` : ''}
             </div>`;
-    });
+    }); // <--- CHIUSURA CORRETTA (Senza slash dopo)
 
-    html += `<button class="btn-nuovo" style="height: 80px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px;" onclick="aggiungiCategoria()">+ NUOVA</button></div>`;
+    if (modalitaEdit) {
+        html += `
+            <button onclick="riordinaAlfabeticamente('cat')" 
+                style="width: 100%; height: 80px; padding: 12px; margin-top: 5px; margin-top: 5px; background: #3182ce; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                🔤 ORDINA (A-Z)
+            </button>`;
+    }
+
+  
+    html += `
+        <button class="btn-nuovo" 
+            style="width: 100%; height: 80px; margin-top: 5px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px; font-weight: bold; cursor: pointer;" 
+            onclick="aggiungiCategoria()">
+            + NUOVA CATEGORIA
+        </button>
+    </div>`; // Chiude il contenitore grid
+
     corpo.innerHTML = html;
 }
 
@@ -1217,6 +1227,10 @@ function renderizzaSottocategorie() {
                 ` : ''}
             </div>`;
     });
+
+if (modalitaEdit) {
+    html += `<button onclick="riordinaAlfabeticamente('sub')" style="height: 80px; "width:100%; padding:12px; margin-top:15px; background:#3182ce; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9rem;">🔤 ORDINA (A-Z)</button>`;
+}
 
     html += `<button class="btn-nuovo" style="height: 80px; border: 2px dashed #28a745; background: #f0fff4; color: #28a745; border-radius: 8px;" onclick="aggiungiSottocategoria()">+ AGGIUNGI</button></div>`;
     corpo.innerHTML = html;
@@ -1416,24 +1430,37 @@ function muoviSottocategoria(idSub, direzione) {
             </td>` : ''}
         </tr>`;
     });
-    html += `</table>`;
+   html += `</table>`;
     corpo.innerHTML = html;
 
-    // Gestione pulsanti azioni (Aggiungi/Conferma)
+    // --- LOGICA PULSANTI AZIONI ---
+    let contenutoAzioni = '';
+
+    // 1. Tasto CONFERMA (se ci sono articoli nel carrello)
     if (carrelloMultiplo.length > 0) {
-        azioni.innerHTML = `
+        contenutoAzioni += `
             <button onclick="confermaCarrello()" style="width:100%; padding:15px; font-weight:bold; background:#48bb78; color:white; border:none; border-radius:8px; margin-bottom:10px; font-size:1.1rem; cursor:pointer;">
                 ✅ CONFERMA ${carrelloMultiplo.length} ARTICOLI
-            </button>
-            <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
-                + AGGIUNGI NUOVO ARTICOLO
-            </button>`;
-    } else {
-        azioni.innerHTML = `
-            <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold;">
-                + AGGIUNGI ARTICOLO IN ${sub.nome}
             </button>`;
     }
+
+    // 2. Tasto ORDINA (Solo in EDIT) - Uniformato al tasto AGGIUNGI
+    if (modalitaEdit) {
+        contenutoAzioni += `
+            <button onclick="riordinaAlfabeticamente('art')" style="width:100%; padding:15px; background:#3182ce; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1.1rem; margin-bottom:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                🔤 ORDINA (A-Z)
+            </button>`;
+    }
+
+    // 3. Tasto AGGIUNGI (Sempre presente)
+    const testoAggiungi = carrelloMultiplo.length > 0 ? "+ AGGIUNGI NUOVO ARTICOLO" : "+ AGGIUNGI ARTICOLO";
+    contenutoAzioni += `
+        <button onclick="aggiungiArticolo()" class="btn-nuovo" style="width:100%; padding:15px; font-weight:bold; font-size:1.1rem;">
+            ${testoAggiungi}
+        </button>`;
+
+    // Applichiamo il risultato finale
+    azioni.innerHTML = contenutoAzioni;
 }
 	
 	function confermaCarrello() {
@@ -1445,8 +1472,8 @@ function muoviSottocategoria(idSub, direzione) {
 
     // Funzione interna per elaborare il carrello uno alla volta
     function processaProssimo() {
+        // Se abbiamo finito gli articoli nel carrello
         if (indiceCorrente >= carrelloMultiplo.length) {
-            // Fine del carrello
             if (inseriti > 0) {
                 salvaSuCloud();
                 renderDiario();
@@ -1454,43 +1481,51 @@ function muoviSottocategoria(idSub, direzione) {
             }
             carrelloMultiplo = [];
             modalitaSelezioneMateriale = false;
+            
             if (typeof chiudiGestioneListino === "function") chiudiGestioneListino();
             else if (typeof chiudiListino === "function") chiudiListino();
             return;
         }
 
+        // Recupero dati articolo corrente
         const percorso = carrelloMultiplo[indiceCorrente];
         const parti = percorso.split('|');
         const art = mioListino[parti[0]].sottocategorie[parti[1]].articoli[parti[2]];
-		
-		const titoloHtml = `Quantità per:<br><span style="color:#48bb78; font-size:1.2rem; font-weight:bold;">${art.n}</span><br><span style="color:#ecc94b; font-size:0.9rem;">(${art.u})</span>`;
+        
+        const titoloHtml = `Quantità per:<br><span style="color:#48bb78; font-size:1.2rem; font-weight:bold;">${art.n}</span><br><span style="color:#ecc94b; font-size:0.9rem;">(${art.u})</span>`;
 
-apriTastierino(titoloHtml, (qta) => {
+        // Apertura tastierino personalizzato
+        apriTastierino(titoloHtml, (qta) => {
             if (qta !== null && qta > 0) {
-                // Calcolo arrotondato al centesimo
+                // Calcoli e formattazione
                 const costoTotale = Math.round(qta * art.p * 100) / 100;
+                const prezzoUnit = parseFloat(art.p || 0).toFixed(2);
                 
+                // Nota in MAIUSCOLO con prezzo unitario tra parentesi
+                const testoNota = `${art.u}. ${qta} - ${art.n} (€ ${prezzoUnit}/${art.u})`.toUpperCase();
+
                 const nuovaRigaMateriale = {
                     data: dataOggi,
                     ore: 0,
                     costi: costoTotale,
-                    // Formato: "MT. 5 - NOME ARTICOLO"
-                
-					note: `${art.u}. ${qta} - ${art.n}`.toUpperCase()
+                    note: testoNota
                 };
 
-                if (!clienti[clienteAttivoIdx].diario) clienti[clienteAttivoIdx].diario = [];
+                // Salvataggio nel diario del cliente attivo
+                if (!clienti[clienteAttivoIdx].diario) {
+                    clienti[clienteAttivoIdx].diario = [];
+                }
                 clienti[clienteAttivoIdx].diario.push(nuovaRigaMateriale);
                 inseriti++;
             }
             
-            // Passa al prossimo articolo
+            // Passa all'articolo successivo
             indiceCorrente++;
             processaProssimo();
         });
-    } // Chiude la funzione superiore (quella che contiene il ciclo o il processaProssimo)
+    }
 
-    // Avvia il processo
+    // Avvio effettivo del ciclo
     processaProssimo();
 }
 
@@ -1964,7 +1999,51 @@ function importaMaterialiCSV(event) {
 
 
 
+function riordinaAlfabeticamente(tipo) {
+    let listaIds = [];
+    let percorsoBase = "";
+    let datiDaOrdinare = {};
 
+    if (tipo === 'cat') {
+        datiDaOrdinare = mioListino || {};
+        listaIds = Object.keys(datiDaOrdinare);
+        percorsoBase = ""; 
+    } else if (tipo === 'sub') {
+        datiDaOrdinare = mioListino[categoriaSelezionata].sottocategorie || {};
+        listaIds = Object.keys(datiDaOrdinare);
+        percorsoBase = `${categoriaSelezionata}/sottocategorie/`;
+    } else if (tipo === 'art') {
+        const sub = mioListino[categoriaSelezionata].sottocategorie[sottocategoriaSelezionata];
+        datiDaOrdinare = sub.articoli || {};
+        listaIds = Object.keys(datiDaOrdinare);
+        percorsoBase = `${categoriaSelezionata}/sottocategorie/${sottocategoriaSelezionata}/articoli/`;
+    }
+
+    if (listaIds.length === 0) return;
+
+    // --- LOGICA DI ORDINAMENTO ALFABETICO ---
+    listaIds.sort((a, b) => {
+        const nomeA = (datiDaOrdinare[a].nome || datiDaOrdinare[a].n || "").toUpperCase();
+        const nomeB = (datiDaOrdinare[b].nome || datiDaOrdinare[b].n || "").toUpperCase();
+        return nomeA.localeCompare(nomeB);
+    });
+
+    // Preparazione aggiornamento massivo
+    const updates = {};
+    listaIds.forEach((id, index) => {
+        updates[percorsoBase + id + '/pos'] = (index + 1) * 10;
+    });
+
+    if (confirm(`Riordinare alfabeticamente tutti gli elementi di questo livello?`)) {
+        refListino.update(updates).then(() => {
+            mostraMessaggio("🔤 Riordinato con successo!");
+            // Refresh automatico della schermata
+            if (tipo === 'cat') renderizzaCategorie();
+            else if (tipo === 'sub') renderizzaSottocategorie();
+            else renderizzaArticoli();
+        });
+    }
+}
 
 
 
