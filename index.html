@@ -274,62 +274,87 @@
     </div>
 
     <div id="dettaglio-cliente" class="hidden">
-        <div class="card">
-            <h2 id="view-titolo" style="margin:0; color:var(--primary);"></h2>
-            <p id="view-anagrafica"></p>
-            <div class="flex-row">
-                <button class="btn-blue" onclick="tornaAllaLista()">🏠 HOME</button>
-                <button class="btn-yellow" onclick="preparaModifica()">✏️ MODIFICA</button>
-                <button class="btn-red" onclick="eliminaClienteSingolo()">🗑️ ELIMINA</button>
-                <button class="btn-green" onclick="window.print()">🖨️ PDF</button>
-            </div>
-        </div>
-        
-
-<div class="card" style="border-left-color: var(--warning);">
-    <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;">
-        <span>📝</span> Nota
-    </h3>
+    <div class="card">
+    <h2 id="view-titolo" style="margin:0; color:var(--primary);"></h2>
+    <p id="view-anagrafica" style="margin-bottom: 15px;"></p>
     
-    <input type="date" id="nota-data">
-    <div style="display: flex; gap: 5px;">
-        <input type="number" id="nota-ore" placeholder="Ore">
-        <input type="number" id="nota-costi" placeholder="€ Costi">
+    <div class="flex-row" style="margin-bottom: 10px; gap: 8px;">
+        <button class="btn-blue" onclick="tornaAllaLista()" style="flex:1; padding: 10px 2px;">🏠 HOME</button>
+        <button class="btn-yellow" onclick="preparaModifica()" style="flex:1; padding: 10px 2px;">✏️ MODIFICA</button>
+        <button class="btn-red" onclick="eliminaClienteSingolo()" style="flex:1; padding: 10px 2px;">🗑️ ELIMINA</button>
+        <button class="btn-green" onclick="window.print()" style="flex:1; padding: 10px 2px;">🖨️ PDF</button>
     </div>
-    <input type="text" id="nota-testo" placeholder="Cosa hai fatto?">
-    
-    <div style="display: flex; gap: 8px; margin-top: 10px; width: 100%;">
-        <button id="btn-nota" class="btn-green" onclick="salvaNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">➕ NOTA</button>
-        <button id="btn-annulla-nota" class="btn-red hidden" onclick="resetFormNota()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; border-radius: 6px; border:none;">❌ ANNULLA</button>
-        <button id="btn-mat" onclick="apriListinoPerDiario()" style="flex: 1; padding: 12px 5px; font-weight: 800; color: white; background:#17a2b8; border-radius: 6px; border:none;">➕ MATERIALI</button>
+
+    <div style="display: flex; gap: 10px;">
+        <button id="btn-toggle-nota" onclick="toggleFormNota()" style="flex: 1; height: 55px; font-weight: 800; background:#48bb78; color: white; border-radius: 8px; border:none; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <span>➕</span> NOTA
+        </button>
+        <button id="btn-mat" onclick="apriListinoPerDiario()" style="flex: 1; height: 55px; font-weight: 800; background:#17a2b8; color: white; border-radius: 8px; border:none; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <span>➕</span> MATERIALI
+        </button>
     </div>
 </div>
 
-<div class="card" style="border-left-color: var(--success);">
-    <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;">
-        <span>📖</span> Diario Lavori
-    </h3>
+    <div id="container-input-nota" class="card" style="display: none; border-left: 5px solid var(--warning); background: #fefcf6; padding: 15px;">
     
-    <div class="totali-box">
-        <div>Ore: <span id="tot-ore">0</span></div>
-        <div>Costi: <span id="tot-costi">0</span> €</div>
+    <h3 id="titolo-form-nota" style="margin: 0 0 15px 0; font-size: 1.1rem; color: #2d3748;">📝 Nuova Nota</h3>
+    
+    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;">
+        <div style="flex: 1.5;">
+            <label style="font-size: 0.7rem; font-weight: bold; color: #718096; display: block; margin-bottom: 3px;">Data:</label>
+            <input type="date" id="nota-data" style="width: 100%; height: 38px; margin: 0; padding: 5px; border: 1px solid #cbd5e0; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 0.7rem; font-weight: bold; color: #718096; display: block; margin-bottom: 3px;">Ore:</label>
+            <input type="number" id="nota-ore" placeholder="H" style="width: 100%; height: 38px; margin: 0; padding: 5px; border: 1px solid #cbd5e0; border-radius: 5px; box-sizing: border-box; text-align: center;">
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 0.7rem; font-weight: bold; color: #718096; display: block; margin-bottom: 3px;">Extra €:</label>
+            <input type="number" id="nota-costi" placeholder="€" style="width: 100%; height: 38px; margin: 0; padding: 5px; border: 1px solid #cbd5e0; border-radius: 5px; box-sizing: border-box; text-align: center;">
+        </div>
     </div>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-data">Data</th>
-                    <th class="col-small">H</th>
-                    <th class="col-small">€</th>
-                    <th>Note e/o Articoli</th>
-                    <th class="col-azioni">Az</th>
-                </tr>
-            </thead>
-            <tbody id="corpo-diario"></tbody>
-        </table>
-		</div>
-	</div>
- </div>
+
+    <div style="margin-bottom: 15px;">
+        <textarea id="nota-testo" placeholder="Cosa hai fatto?" rows="4" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; box-sizing: border-box; display: block;"></textarea>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 5px;">
+    <button id="btn-nota" onclick="salvaNota()" style="flex: 1; height: 55px; font-weight: 800; color: white; border-radius: 8px; border: none; background: #48bb78; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+        <span>💾</span> SALVA
+    </button>
+    <button id="btn-annulla-nota" onclick="resetFormNota(); toggleFormNota();" style="flex: 1; height: 55px; font-weight: 800; color: white; border-radius: 8px; border: none; background: #f56565; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+        <span>❌</span> ANNULLA
+    </button>
+</div>
+</div>
+
+    <div class="card" style="border-left-color: var(--success);">
+        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px;">
+            <span>📖</span> Diario Lavori
+        </h3>
+        
+        <div class="totali-box">
+            <div>Ore: <span id="tot-ore">0</span></div>
+            <div>Costi: <span id="tot-costi">0</span> €</div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-data">Data</th>
+                        <th class="col-small">H</th>
+                        <th class="col-small">€</th>
+                        <th>Note e/o Articoli</th>
+                        <th class="col-azioni">Az</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-diario"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
 </div>
 
 
@@ -735,6 +760,7 @@ function modificaClienteRapido(index) {
     salvaSuCloud(); 
     resetFormNota(); 
     renderDiario();
+	toggleFormNota();
     mostraMessaggio("✅ Nota salvata!");
 }
 
@@ -744,54 +770,47 @@ function modificaClienteRapido(index) {
     corpo.innerHTML = ''; 
     
     let hT = 0, cT = 0;
+    const dMapped = diarioOriginale.map((nota, index) => ({...nota, originalIndex: index}));
 
-    const dMapped = diarioOriginale.map((nota, index) => ({
-        ...nota,
-        originalIndex: index
-    }));
-
-    dMapped.sort((a, b) => {
-        const dataA = new Date(a.data);
-        const dataB = new Date(b.data);
-        if (dataB - dataA !== 0) {
-            return dataB - dataA;
-        }
-        return b.originalIndex - a.originalIndex;
-    });
+    dMapped.sort((a, b) => (new Date(b.data) - new Date(a.data)) || (b.originalIndex - a.originalIndex));
 
     dMapped.forEach((r) => {
         const oreNum = parseFloat(r.ore || 0);
         const costiNum = parseFloat(r.costi || 0);
-
-        hT += oreNum; 
-        cT += costiNum;
-
+        hT += oreNum; cT += costiNum;
         let dataF = r.data ? r.data.split('-').reverse().join('/') : '---';
 
-        // --- LOGICA DI FORMATTAZIONE NOTA ---
         let notaFormattata = r.note || "";
-        // Se la nota contiene il prezzo tra parentesi, lo mettiamo a capo e più piccolo
         if (notaFormattata.includes(' (€')) {
-            notaFormattata = notaFormattata.replace(' (€', '<br><small style="color: #718096; font-size: 0.8rem;">(€');
+            notaFormattata = notaFormattata.replace(' (€', '<br><small style="color: #718096;">(€');
             notaFormattata = notaFormattata.replace(')', ')</small>');
         }
 
         corpo.innerHTML += `
             <tr>
-                <td class="col-data">${dataF}</td>
-                <td class="col-small">${oreNum.toFixed(2)}</td>
-                <td class="col-small" style="font-weight:bold;">${costiNum.toFixed(2)}€</td>
-                <td style="line-height: 1.2; padding: 8px 5px;">${notaFormattata}</td>
-                <td class="col-azioni">
-                    <button class="btn-yellow" style="padding:2px 5px;" onclick="preparaModificaNota(${r.originalIndex})">✏️</button>
-                    <button class="btn-red" style="padding:2px 5px;" onclick="eliminaNota(${r.originalIndex})">🗑️</button>
-                </td>
+                <td style="width:75px; font-size:0.8rem;">${dataF}</td>
+                <td style="width:40px; text-align:center;">${oreNum.toFixed(2)}</td>
+                <td style="width:60px; text-align:right; font-weight:bold;">${costiNum.toFixed(2)}€</td>
+                <td style="word-break: break-word; min-width: 100px; padding: 8px 5px; line-height:1.2;">${notaFormattata}</td>
+                <td style="width:70px; text-align:right; white-space:nowrap; vertical-align:middle;">
+    <span onclick="preparaModificaNota(${r.originalIndex})" style="cursor:pointer; font-size:1.2rem; margin-right:8px;">✏️</span>
+    <span onclick="eliminaNota(${r.originalIndex})" style="cursor:pointer; font-size:1.2rem;">🗑️</span>
+</td>
             </tr>`;
     });
 
     document.getElementById('tot-ore').innerText = hT.toFixed(2);
     document.getElementById('tot-costi').innerText = cT.toFixed(2);
 }
+
+
+function eliminaNota(idx) {
+        if(confirm("Eliminare questa riga?")) { 
+            clienti[clienteAttivoIdx].diario.splice(idx, 1); 
+            salvaSuCloud(); renderDiario(); 
+        }
+    }
+
 
     // ELIMINAZIONE MULTIPLA E DIVENTA ANCHE EDITA
     
@@ -869,52 +888,65 @@ function toggleModalitaElimina() {
 }
 	function resetFormNota() {
     rigaDiarioModificaIdx = null;
+    
+    // 1. Reset campi dati
     document.getElementById('nota-data').value = new Date().toISOString().split('T')[0];
     document.getElementById('nota-ore').value = "";
     document.getElementById('nota-costi').value = "";
     document.getElementById('nota-testo').value = "";
     
+    // 2. Ripristino testi (Usiamo innerHTML per supportare le icone span se le hai messe)
+    document.getElementById('titolo-form-nota').innerText = "📝 Nuova Nota";
+    
     if(document.getElementById('btn-nota')) {
-        document.getElementById('btn-nota').innerText = "➕ NOTA";
+        document.getElementById('btn-nota').innerHTML = "<span>💾</span> SALVA";
     }
 
-    // CONTROLLO DI SICUREZZA: se il tasto esiste, nascondilo
+    // 3. Gestione Tasto Annulla
+    // NON nasconderlo con 'hidden' perché nel nuovo box giallo 
+    // serve sempre come alternativa al tasto chiudi in alto.
     const btnAnnulla = document.getElementById('btn-annulla-nota');
     if(btnAnnulla) {
-        btnAnnulla.classList.add('hidden');
+        btnAnnulla.classList.remove('hidden'); 
     }
     
+    // 4. Ripristino Tasto Materiali
+    // Questo è fondamentale: quando finisce la modifica, il listino deve tornare cliccabile
     if(document.getElementById('btn-mat')) {
         document.getElementById('btn-mat').classList.remove('hidden');
     }
 }
     function preparaModificaNota(idx) { 
+    // 1. Apriamo il form se è chiuso
+    const container = document.getElementById('container-input-nota');
+    if (container.style.display === 'none') {
+        toggleFormNota();
+    }
+    
+    // 2. Cambiamo il titolo e il testo del bottone
+    document.getElementById('titolo-form-nota').innerText = "✏️ Modifica Nota";
+    document.getElementById('btn-nota').innerHTML = "<span>🔄</span> AGGIORNA"; 
+
+    // Recuperiamo i dati usando 'r' come nel tuo codice
     const r = clienti[clienteAttivoIdx].diario[idx]; 
     rigaDiarioModificaIdx = idx; 
+    
     document.getElementById('nota-data').value = r.data; 
     document.getElementById('nota-ore').value = r.ore; 
     document.getElementById('nota-costi').value = r.costi; 
     document.getElementById('nota-testo').value = r.note; 
     
-    document.getElementById('btn-nota').innerText = "✅ AGGIORNA NOTA"; 
+    // Gestione visibilità tasti
     document.getElementById('btn-annulla-nota').classList.remove('hidden'); 
     
-    // NASCONDI il tasto materiali durante la modifica
     if(document.getElementById('btn-mat')) {
         document.getElementById('btn-mat').classList.add('hidden');
     }
+
+    // Se ti piaceva lo scorrimento verso l'alto che faceva il browser, 
+    // non tocchiamo nulla nel toggleFormNota originale.
 }
 
-    // NUOVE FUNZIONI: RICERCA E RIPRISTINO
-    
-	// function filtraClienti() {
-    //    const query = document.getElementById('cercaInput').value.toLowerCase();
-    //    const filtrati = clienti.filter(c => 
-    //        (c.cognome && c.cognome.toLowerCase().includes(query)) || 
-    //        (c.citta && c.citta.toLowerCase().includes(query))
-    //    );
-    //    renderLista(filtrati);
-    //}
 	
 	function filtraClienti() {
     const query = document.getElementById('cercaInput').value.toUpperCase().trim();
@@ -1824,28 +1856,6 @@ function ciclaOrdinamento() {
     renderLista();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function esportaMaterialiCSV() {
     if (!mioListino) {
         alert("Nessun dato da esportare.");
@@ -2046,7 +2056,22 @@ function riordinaAlfabeticamente(tipo) {
 }
 
 
-
+function toggleFormNota() {
+    const container = document.getElementById('container-input-nota');
+    const btnToggle = document.getElementById('btn-toggle-nota');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btnToggle.innerText = "🔼 CHIUDI NOTA";
+        btnToggle.style.background = "#718096"; // Colore grigio quando è aperto
+        // Scroll automatico per vedere il form su schermi piccoli
+        container.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        container.style.display = 'none';
+        btnToggle.innerText = "➕ NOTA";
+        btnToggle.style.background = "#48bb78"; // Torna verde
+    }
+}
 
 
 
