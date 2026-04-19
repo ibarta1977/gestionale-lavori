@@ -1385,29 +1385,35 @@ function muoviSottocategoria(idSub, direzione) {
 
         html += `
         <tr style="border-bottom: 1px solid #eee; background-color: ${backgroundRow};">
+            ${modalitaEdit ? `
+            <td style="padding: 12px 5px; width: 40px; vertical-align: middle;">
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                    <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'su')" 
+                        style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 34px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 7px solid #3182ce;"></div>
+                    </button>
+                    <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'giu')" 
+                        style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 34px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #3182ce;"></div>
+                    </button>
+                </div>
+            </td>` : ''}
+
             <td style="padding: 12px 5px; cursor: pointer; color: #2b6cb0;" onclick="selezionaMaterialePerDiario('${idArt}')"> 
                 <strong>${isSelezionato ? '✅ ' : ''}${a.n}</strong>
             </td>
+            
             <td style="padding: 12px 5px; text-align: right; white-space: nowrap;">
                 €${parseFloat(a.p).toFixed(2)}<br><small>${a.u}</small>
             </td>
+
             ${modalitaEdit ? `
-<td style="padding: 12px 2px; text-align: right; width: 110px;">
-    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-            <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'su')" 
-                style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 32px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 7px solid #3182ce;"></div>
-            </button>
-            <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'giu')" 
-                style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 32px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #3182ce;"></div>
-            </button>
-        </div>
-        <button onclick="event.stopPropagation(); modificaArticolo('${idArt}')" style="background:none; border:none; padding: 2px; cursor:pointer; font-size:1.2rem;">✏️</button>
-        <button onclick="event.stopPropagation(); eliminaArticolo('${idArt}')" style="background:none; border:none; padding: 2px; cursor:pointer; font-size:1.2rem;">🗑️</button>
-    </div>
-</td>` : ''}
+            <td style="padding: 12px 5px; text-align: right; width: 80px;">
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    <button onclick="event.stopPropagation(); modificaArticolo('${idArt}')" style="background:none; border:none; padding: 5px; cursor:pointer; font-size:1.3rem;">✏️</button>
+                    <button onclick="event.stopPropagation(); eliminaArticolo('${idArt}')" style="background:none; border:none; padding: 5px; cursor:pointer; font-size:1.3rem;">🗑️</button>
+                </div>
+            </td>` : ''}
         </tr>`;
     });
     html += `</table>`;
