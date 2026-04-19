@@ -1155,34 +1155,36 @@ function renderizzaSottocategorie() {
     const corpo = document.getElementById('corpo-listino');
     const catPadre = mioListino[categoriaSelezionata];
 
-// PULIZIA SICURA: Svuota solo se l'elemento è presente nella pagina
     const azioni = document.getElementById('azioni-listino');
-    if (azioni) {
-        azioni.innerHTML = "";
-    }
+    if (azioni) { azioni.innerHTML = ""; }
 
-
-   document.getElementById('titolo-listino').innerHTML = `
+    document.getElementById('titolo-listino').innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 90px; padding: 0 5px; box-sizing: border-box;">
         <div style="display: flex; flex-direction: column; justify-content: center;">
             <span style="font-size: 0.75rem; color: #718096; text-transform: uppercase; line-height: 1;">Categoria</span>
             <span style="font-weight: bold; font-size: 1.1rem; line-height: 1.2;">${catPadre.nome}</span>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="toggleEdit()" style="background: ${modalitaEdit ? '#ed8936' : '#edf2f7'}; color: ${modalitaEdit ? 'white' : '#2d3748'}; border: 1px solid #cbd5e0; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 ${modalitaEdit ? 'FINE ✅' : 'EDIT ⚙️'}
             </button>
-            <button onclick="renderizzaCategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; width: 28%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+            <button onclick="renderizzaCategorie()" style="background: #4a5568; color: white; border: none; border-radius: 8px; cursor:pointer; font-weight:bold; height: 55px; min-width: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
                 INDIETRO
             </button>
         </div>
-    </div>
-`;
+    </div>`;
 
     let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 15px 5px;">';
     const subs = catPadre.sottocategorie || {};
     
-    Object.keys(subs).forEach(idSub => {
+    // --- ORDINAMENTO ---
+    const subsIds = Object.keys(subs).sort((a, b) => {
+        const posA = subs[a].pos !== undefined ? parseInt(subs[a].pos) : 999;
+        const posB = subs[b].pos !== undefined ? parseInt(subs[b].pos) : 999;
+        return posA - posB;
+    });
+
+    subsIds.forEach(idSub => {
         const sub = subs[idSub];
         const sfondo = sub.colore || '#edf2f7';
         const testoColore = getContrasto(sfondo);
@@ -1195,12 +1197,23 @@ function renderizzaSottocategorie() {
                 </button>
 
                 ${modalitaEdit ? `
-                    <button onclick="cambiaColore('sub', '${idSub}')"
-        style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
-    🎨
-</button>
-                    <button onclick="rinominaLivello('sub', '${idSub}')" style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
-                    <button onclick="eliminaLivello('sub', '${idSub}')" style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
+                    <button onclick="event.stopPropagation(); cambiaColore('sub', '${idSub}')"
+                            style="position: absolute; top: -5px; left: -5px; background: white; border: 1px solid #ccc; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">
+                        🎨
+                    </button>
+                    <button onclick="event.stopPropagation(); rinominaLivello('sub', '${idSub}')" style="position: absolute; top: -5px; right: -5px; background: #3182ce; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">✏️</button>
+                    
+                    <button onclick="event.stopPropagation(); muoviSottocategoria('${idSub}', 'indietro')" 
+                            style="position: absolute; bottom: -8px; left: 0px; background: white; border: 1px solid #3182ce; width: 34px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 12; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                        <div style="width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 7px solid #3182ce;"></div>
+                    </button>
+
+                    <button onclick="event.stopPropagation(); muoviSottocategoria('${idSub}', 'avanti')" 
+                            style="position: absolute; bottom: -8px; left: 46px; background: white; border: 1px solid #3182ce; width: 34px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 12; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                        <div style="width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid #3182ce;"></div>
+                    </button>
+
+                    <button onclick="event.stopPropagation(); eliminaLivello('sub', '${idSub}')" style="position: absolute; bottom: -5px; right: -5px; background: #e53e3e; color: white; border: 1px solid white; width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: pointer; display:flex; align-items:center; justify-content:center;">🗑️</button>
                 ` : ''}
             </div>`;
     });
@@ -1293,6 +1306,36 @@ function confermaColore(coloreScelto) {
 }
 
 
+function muoviSottocategoria(idSub, direzione) {
+    const catPadre = mioListino[categoriaSelezionata];
+    const subs = catPadre.sottocategorie || {};
+    
+    let listaOrdinata = Object.keys(subs).sort((a, b) => {
+        const pA = subs[a].pos !== undefined ? parseInt(subs[a].pos) : 999;
+        const pB = subs[b].pos !== undefined ? parseInt(subs[b].pos) : 999;
+        return pA - pB;
+    });
+
+    const indiceAttuale = listaOrdinata.indexOf(idSub);
+    if (indiceAttuale === -1) return;
+
+    let nuovoIndice = direzione === 'indietro' ? indiceAttuale - 1 : indiceAttuale + 1;
+    if (nuovoIndice < 0 || nuovoIndice >= listaOrdinata.length) return;
+
+    listaOrdinata.splice(indiceAttuale, 1);
+    listaOrdinata.splice(nuovoIndice, 0, idSub);
+
+    const updates = {};
+    listaOrdinata.forEach((id, index) => {
+        // Percorso: CategoriaPadre -> sottocategorie -> idSub -> pos
+        updates[`${categoriaSelezionata}/sottocategorie/${id}/pos`] = (index + 1) * 10;
+    });
+
+    refListino.update(updates).then(() => {
+        console.log("Ordine sottocategorie sincronizzato");
+    }).catch(err => console.error("Errore spostamento:", err));
+}
+
 	
 // --- LIVELLO 3: ARTICOLI ---
 
@@ -1325,14 +1368,12 @@ function confermaColore(coloreScelto) {
 
     const arts = sub.articoli || {};
     
-    // --- MODIFICA CHIRURGICA PER ORDINAMENTO ---
-    // Trasformiamo le chiavi in un array e le ordiniamo in base al campo .pos dell'articolo
+    // Ordinamento ID articoli per posizione
     const artsIds = Object.keys(arts).sort((a, b) => {
         const posA = arts[a].pos !== undefined ? parseInt(arts[a].pos) : 999;
         const posB = arts[b].pos !== undefined ? parseInt(arts[b].pos) : 999;
         return posA - posB;
     });
-    // --------------------------------------------
 
     let html = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">`;
     
@@ -1343,23 +1384,36 @@ function confermaColore(coloreScelto) {
         const backgroundRow = isSelezionato ? '#c6f6d5' : 'transparent';
 
         html += `
-        <tr style="border-bottom: 1px solid #eee; background-color: ${backgroundRow}; transition: background 0.3s;">
+        <tr style="border-bottom: 1px solid #eee; background-color: ${backgroundRow};">
             <td style="padding: 12px 5px; cursor: pointer; color: #2b6cb0;" onclick="selezionaMaterialePerDiario('${idArt}')"> 
                 <strong>${isSelezionato ? '✅ ' : ''}${a.n}</strong>
             </td>
-            <td style="padding: 12px 5px; text-align: right;">
+            <td style="padding: 12px 5px; text-align: right; white-space: nowrap;">
                 €${parseFloat(a.p).toFixed(2)}<br><small>${a.u}</small>
             </td>
             ${modalitaEdit ? `
-            <td style="padding: 12px 5px; text-align: right;">
-                <button onclick="modificaArticolo('${idArt}')" style="background:none; border:none;">✏️</button>
-                <button onclick="eliminaArticolo('${idArt}')" style="background:none; border:none;">🗑️</button>
-            </td>` : ''}
+<td style="padding: 12px 2px; text-align: right; width: 110px;">
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'su')" 
+                style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 32px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 7px solid #3182ce;"></div>
+            </button>
+            <button onclick="event.stopPropagation(); muoviArticolo('${idArt}', 'giu')" 
+                style="background: white; border: 1px solid #3182ce; border-radius: 4px; width: 32px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #3182ce;"></div>
+            </button>
+        </div>
+        <button onclick="event.stopPropagation(); modificaArticolo('${idArt}')" style="background:none; border:none; padding: 2px; cursor:pointer; font-size:1.2rem;">✏️</button>
+        <button onclick="event.stopPropagation(); eliminaArticolo('${idArt}')" style="background:none; border:none; padding: 2px; cursor:pointer; font-size:1.2rem;">🗑️</button>
+    </div>
+</td>` : ''}
         </tr>`;
     });
     html += `</table>`;
     corpo.innerHTML = html;
 
+    // Gestione pulsanti azioni (Aggiungi/Conferma)
     if (carrelloMultiplo.length > 0) {
         azioni.innerHTML = `
             <button onclick="confermaCarrello()" style="width:100%; padding:15px; font-weight:bold; background:#48bb78; color:white; border:none; border-radius:8px; margin-bottom:10px; font-size:1.1rem; cursor:pointer;">
@@ -1553,6 +1607,42 @@ function modificaArticolo(idArt) {
     }, art.p); // <--- Valore iniziale per Prezzo
 }
 
+function muoviArticolo(idArt, direzione) {
+    const cat = mioListino[categoriaSelezionata];
+    const sub = cat.sottocategorie[sottocategoriaSelezionata];
+    const arts = sub.articoli || {};
+    
+    // Ordiniamo gli articoli attuali per posizione
+    let listaOrdinata = Object.keys(arts).sort((a, b) => {
+        const pA = arts[a].pos !== undefined ? parseInt(arts[a].pos) : 999;
+        const pB = arts[b].pos !== undefined ? parseInt(arts[b].pos) : 999;
+        return pA - pB;
+    });
+
+    const indiceAttuale = listaOrdinata.indexOf(idArt);
+    if (indiceAttuale === -1) return;
+
+    let nuovoIndice = direzione === 'su' ? indiceAttuale - 1 : indiceAttuale + 1;
+    if (nuovoIndice < 0 || nuovoIndice >= listaOrdinata.length) return;
+
+    // Spostamento nell'array
+    listaOrdinata.splice(indiceAttuale, 1);
+    listaOrdinata.splice(nuovoIndice, 0, idArt);
+
+    const updates = {};
+    listaOrdinata.forEach((id, index) => {
+        // Percorso: Categoria -> Sottocategoria -> Articoli -> idArt -> pos
+        updates[`${categoriaSelezionata}/sottocategorie/${sottocategoriaSelezionata}/articoli/${id}/pos`] = (index + 1) * 10;
+    });
+
+    // Aggiorniamo Firebase
+    refListino.update(updates).then(() => {
+        console.log("Ordine articoli aggiornato");
+        // --- QUESTA È LA RIGA MAGICA ---
+        renderizzaArticoli(); 
+        // -------------------------------
+    }).catch(err => console.error("Errore spostamento articolo:", err));
+}
 
 function apriListinoPerDiario() {
     modalitaSelezioneMateriale = true;
