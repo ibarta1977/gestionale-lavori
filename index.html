@@ -551,8 +551,19 @@ async function forzaAggiornamentoApp() {
                 const data = snapshot.val();
                 clienti = data ? Object.values(data) : [];
                 localStorage.setItem('cache_clienti_globali', JSON.stringify(clienti));
-                renderLista(clienti);
-                loadingEl.classList.add('hidden');
+                
+				
+				// --- INIZIO MODIFICA RECUPERO ORDINE ---
+                const ordineSalvato = localStorage.getItem('preferenza_ordinamento');
+                if (ordineSalvato !== null) {
+                    statoOrdinamento = parseInt(ordineSalvato);
+                }
+                applicaOrdinamento(); // Questa funzione chiama internamente renderLista()
+                // --- FINE MODIFICA ---
+                
+				
+				
+				loadingEl.classList.add('hidden');
             }, err => {
                 console.error("Errore database:", err.message);
                 loadingEl.classList.add('hidden');
@@ -1843,21 +1854,35 @@ let statoOrdinamento = 0; // 0: Data, 1: A-Z, 2: Urgenza
 
 function ciclaOrdinamento() {
     statoOrdinamento = (statoOrdinamento + 1) % 3;
-    const btn = document.getElementById('btn-ordina');
     
+    // Salviamo la scelta nel telefono così non si dimentica al riavvio
+    localStorage.setItem('preferenza_ordinamento', statoOrdinamento);
+    
+    applicaOrdinamento();
+}
+
+
+function applicaOrdinamento() {
+    const btn = document.getElementById('btn-ordina');
+    if(!btn) return; // Sicurezza se il tasto non è ancora caricato
+
     if (statoOrdinamento === 0) {
         btn.innerHTML = "🕒 ORDINE: DATA";
-        clienti.sort((a, b) => b.id - a.id); // Più recenti in alto
+        clienti.sort((a, b) => (b.id || 0) - (a.id || 0)); 
     } else if (statoOrdinamento === 1) {
         btn.innerHTML = "🔠 ORDINE: A-Z";
         clienti.sort((a, b) => (a.cognome || "").localeCompare(b.cognome || ""));
     } else if (statoOrdinamento === 2) {
         btn.innerHTML = "🚨 ORDINE: URGENZA";
-        clienti.sort((a, b) => b.urgenza - a.urgenza); // Urgenza 2 (Rosso) va in cima
+        clienti.sort((a, b) => (b.urgenza || 0) - (a.urgenza || 0)); 
     }
     
     renderLista();
 }
+
+
+
+
 
 function esportaMaterialiCSV() {
     if (!mioListino) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestionale-lavori-v5.7'; // <--- CAMBIATO A V5.7
+const CACHE_NAME = 'gestionale-lavori-v5.8'; // <--- CAMBIATO A V5.8
 const assets = [
   './',
   './index.html',
