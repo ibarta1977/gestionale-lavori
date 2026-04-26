@@ -384,6 +384,12 @@ window.onbeforeunload = function(e) {
     const auth = firebase.auth();
     const db = firebase.database();
 	
+	// --- AGGIUNTA QUI: Forza la persistenza del login sul disco ---
+	auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .catch(err => console.error("Errore persistenza:", err));
+	// -----------------------------------------------------------
+	
+	
 	// --- NUOVO: Variabili per il Listino ---
 	let refListino; 
 	let mioListino = {};
@@ -433,8 +439,29 @@ if (cacheSalvata) {
 	let modalitaSelezioneMateriale = false;
 
     // LOGIN / LOGOUT (VERSIONE CORRETTA PER OFFLINE)
-    auth.onAuthStateChanged(user => {
-        const haDatiInCache = localStorage.getItem('cache_clienti_globali');
+    // VARIABILE DI CONTROLLO PER IL TIMEOUT
+	let loginDeciso = false;
+
+	// TIMER DI PARACADUTE (4 secondi)
+	const timerSicurezza = setTimeout(() => {
+		if (!loginDeciso) {
+			const haDatiInCache = localStorage.getItem('cache_clienti_globali');
+			if (haDatiInCache) {
+            console.warn("⏱️ Segnale debole: Entro in modalità cache (Paracadute)");
+				if (clienti.length === 0) clienti = JSON.parse(haDatiInCache);
+            switchView('lista-clienti');
+            renderLista(clienti);
+            mostraMessaggio("📡 Modalità Offline (Segnale Debole)");
+        }
+    }
+}, 4000);
+	
+	
+	auth.onAuthStateChanged(user => {
+        loginDeciso = true; // Firebase ha risposto, disattiviamo logiche di timeout
+		clearTimeout(timerSicurezza);
+		
+		const haDatiInCache = localStorage.getItem('cache_clienti_globali');
 
         if (user) {
             // 1. ONLINE E LOGGATO
@@ -457,10 +484,10 @@ if (cacheSalvata) {
             ascoltaDatiCloud();
         } else {
             // 2. OFFLINE O APP APPENA RIAPERTA
+			// Se non c'è utente, ma abbiamo dati, entriamo comunque (Modalità Lavoro Offline)
             if (haDatiInCache) {
                 console.log("Riapertura con dati in cache");
                 
-                // --- FIX: Se la variabile 'clienti' è vuota, riempila subito! ---
                 if (clienti.length === 0) {
                     clienti = JSON.parse(haDatiInCache);
                 }
@@ -485,7 +512,8 @@ if (cacheSalvata) {
     }
     function logout() { 
     if(confirm("Vuoi uscire? La cache locale verrà svuotata.")) {
-        localStorage.removeItem('cache_clienti_globali'); // Pulizia sicurezza
+        loginDeciso = false; // Reset per il prossimo avvio
+        localStorage.removeItem('cache_clienti_globali'); 
         auth.signOut(); 
     }
 }
@@ -796,6 +824,8 @@ function modificaClienteRapido(index) {
             notaFormattata = notaFormattata.replace(' (€', '<br><small style="color: #718096;">(€');
             notaFormattata = notaFormattata.replace(')', ')</small>');
         }
+		
+
 
         corpo.innerHTML += `
     <tr>
@@ -930,37 +960,115 @@ function toggleModalitaElimina() {
         document.getElementById('btn-mat').classList.remove('hidden');
     }
 }
-    function preparaModificaNota(idx) { 
-    // 1. Apriamo il form se è chiuso
+   function preparaModificaNota(idx) {
+    const r = clienti[clienteAttivoIdx].diario[idx];
+    rigaDiarioModificaIdx = idx;
+
+// LOG DI DEBUG: apri la console del browser (F12) e vedi cosa scrive qui
+    console.log("Analisi nota per popup:", r.note);
+
+    // Riconoscimento Articolo: cerca la firma del listino "(€ .../..)"
+    if (r.note.includes(" (€") && r.note.includes("/")) {
+        const scelta = confirm("Questo è un ARTICOLO del listino.\n\nVuoi usare la MODIFICA GUIDATA (Nome, Prezzo, Qta)?\n\n[OK] Guida / [Annulla] Solo Testo");
+        
+        if (scelta) {
+            avviaModificaArticoloDiario(r.note, r.data, idx);
+            return; 
+        }
+    }
+
+    // Se è una nota normale
     const container = document.getElementById('container-input-nota');
-    if (container.style.display === 'none') {
-        toggleFormNota();
-    }
+    if (container.style.display === 'none') toggleFormNota();
     
-    // 2. Cambiamo il titolo e il testo del bottone
     document.getElementById('titolo-form-nota').innerText = "✏️ Modifica Nota";
-    document.getElementById('btn-nota').innerHTML = "<span>🔄</span> AGGIORNA"; 
+    document.getElementById('btn-nota').innerHTML = "<span>🔄</span> AGGIORNA";
+    
+    document.getElementById('nota-data').value = r.data;
+    document.getElementById('nota-ore').value = r.ore;
+    document.getElementById('nota-costi').value = r.costi;
+    document.getElementById('nota-testo').value = r.note;
 
-    // Recuperiamo i dati usando 'r' come nel tuo codice
-    const r = clienti[clienteAttivoIdx].diario[idx]; 
-    rigaDiarioModificaIdx = idx; 
-    
-    document.getElementById('nota-data').value = r.data; 
-    document.getElementById('nota-ore').value = r.ore; 
-    document.getElementById('nota-costi').value = r.costi; 
-    document.getElementById('nota-testo').value = r.note; 
-    
-    // Gestione visibilità tasti
-    document.getElementById('btn-annulla-nota').classList.remove('hidden'); 
-    
-    if(document.getElementById('btn-mat')) {
-        document.getElementById('btn-mat').classList.add('hidden');
-    }
-
-    // Se ti piaceva lo scorrimento verso l'alto che faceva il browser, 
-    // non tocchiamo nulla nel toggleFormNota originale.
+    if(document.getElementById('btn-mat')) document.getElementById('btn-mat').classList.add('hidden');
 }
 
+function avviaModificaArticoloDiario(stringa, dataOriginale, idx) {
+    try {
+        // 1. Estrazione dati esistenti
+        const matchQta = stringa.match(/^([A-Z.]+)\s?([0-9.]+)/);
+        let umAttuale = matchQta ? matchQta[1].replace('.', '').toUpperCase() : "NR";
+        const qtaAttuale = matchQta ? parseFloat(matchQta[2]) : 1;
+
+        const matchPrezzo = stringa.match(/€\s?([0-9.]+)\//);
+        const prezzoUnitario = matchPrezzo ? parseFloat(matchPrezzo[1]) : 0;
+
+
+
+        let nomeArt = "Articolo";
+        if (stringa.includes(" - ") && stringa.includes(" (€")) {
+            nomeArt = stringa.split(" - ")[1].split(" (€")[0].trim();
+        }
+
+        // STEP 1: Nome
+        const nuovoNome = prompt("Modifica Nome Materiale:", nomeArt);
+        if (!nuovoNome) return;
+
+        // STEP 2: Prezzo
+        apriTastierino(`Nuovo prezzo per ${nuovoNome}:`, (nuovoP) => {
+            if (nuovoP === null) return;
+
+            // STEP 3: Quantità (Senza "Unità" nel titolo così i tasti blu sono nascosti)
+            apriTastierino(`Inserisci Quantità (attuale ${qtaAttuale}):`, (nuovaQ) => {
+                if (nuovaQ === null) return;
+
+                // STEP 4: Unità di Misura (Con "Unità" nel titolo per mostrare i tasti blu)
+                const umMappa = { "MT": 1, "NR": 2, "KG": 3, "CONF": 4 };
+                const valoreUmIniziale = umMappa[umAttuale] || 2;
+
+                apriTastierino("Scegli <b>Unità</b> di Misura:", (sceltaUm) => {
+                    if (sceltaUm === null) return;
+
+                    let nuovaUM = "";
+                    const scelta = Math.floor(parseFloat(sceltaUm));
+                    switch(scelta) {
+                        case 1: nuovaUM = "MT"; break;
+                        case 2: nuovaUM = "NR"; break;
+                        case 3: nuovaUM = "KG"; break;
+                        case 4: nuovaUM = "CONF"; break;
+                        default: nuovaUM = umAttuale;
+                    }
+
+                    
+
+					const nQ = parseFloat(nuovaQ);
+					const nP = parseFloat(nuovoP);
+					const costoTot = (nQ * nP).toFixed(2);
+
+					// RICOSTRUZIONE STRINGA IDENTICA ALL'ORIGINALE
+					const nuovaNota = `${nuovaUM}. ${nQ.toFixed(2)} - ${nuovoNome.toUpperCase().trim()} (€ ${nP.toFixed(2)}/${nuovaUM})`;
+
+                    // Salvataggio
+                    clienti[clienteAttivoIdx].diario[idx] = {
+                        data: dataOriginale,
+                        ore: 0,
+                        costi: costoTot,
+                        note: nuovaNota
+                    };
+
+                    salvaSuCloud();
+                    renderDiario();
+                    mostraMessaggio("✏️ Articolo aggiornato!");
+                }, valoreUmIniziale); // Passiamo l'UM attuale come valore di default nel display
+            }, qtaAttuale);
+        }, prezzoUnitario);
+
+    } catch (e) {
+        console.error(e);
+        alert("Errore nell'analisi. Uso l'editor standard.");
+        rigaDiarioModificaIdx = idx;
+        toggleFormNota();
+    }
+}
 	
 	function filtraClienti() {
     const query = document.getElementById('cercaInput').value.toUpperCase().trim();
