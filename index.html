@@ -295,16 +295,16 @@
     <p id="view-anagrafica" style="margin-bottom: 12px;"></p>
     
     <div class="flex-row" style="margin-bottom: 15px; gap: 5px; display: flex;">
-    <button class="btn-blue" onclick="tornaAllaLista()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85em; gap: 3px;">
+    <button class="btn-blue" onclick="tornaAllaLista()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.9em; gap: 3px;">
         <span>🏠</span> <span>HOME</span>
     </button>
-    <button class="btn-yellow" onclick="preparaModifica()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85em; gap: 3px;">
+    <button class="btn-yellow" onclick="preparaModifica()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.9em; gap: 3px;">
         <span>✏️</span> <span>MODIFICA</span>
     </button>
-    <button class="btn-red" onclick="eliminaClienteSingolo()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85em; gap: 3px;">
+    <button class="btn-red" onclick="eliminaClienteSingolo()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.9em; gap: 3px;">
         <span>🗑️</span> <span>ELIMINA</span>
     </button>
-    <button class="btn-green" onclick="window.print()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85em; gap: 3px;">
+    <button class="btn-green" onclick="window.print()" style="flex:1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.9em; gap: 3px;">
         <span>🖨️</span> <span>PDF</span>
     </button>
 </div>
@@ -425,6 +425,9 @@ window.onbeforeunload = function(e) {
     let clienti = [];
 // VARIABILE per impostare carrello multiplo nel DIARIO	
 	let carrelloMultiplo = []; 
+	
+	// VARIABILE PER CONTROLLARE STATUS DELLA MODIFICA CLIENTE
+	let provenienzaDettaglio = false;
 
 // COLORI
 	
@@ -465,6 +468,9 @@ if (cacheSalvata) {
     // LOGIN / LOGOUT (VERSIONE CORRETTA PER OFFLINE)
     // VARIABILE DI CONTROLLO PER IL TIMEOUT
 	let loginDeciso = false;
+	
+	
+	
 
 	// TIMER DI PARACADUTE (4 secondi)
 	const timerSicurezza = setTimeout(() => {
@@ -750,7 +756,8 @@ function modificaClienteRapido(index) {
     clienteSelezionatoIndex = index; 
     clienteAttivoIdx = index; // Uso quello che usa la tua app
     modoModificaCliente = true; // Diciamo all'app che stiamo modificando, non creando
-    
+    provenienzaDettaglio = false; // <--- SETTIAMO CHE VENIAMO DALLA HOME
+	
     const c = clienti[index];
     
     const impostaCampo = (id, valore) => {
@@ -967,9 +974,26 @@ function toggleModalitaElimina() {
         document.getElementById(id).classList.remove('hidden');
     }
 
-    function tornaAllaLista() { clienteAttivoIdx = null; switchView('lista-clienti'); }
-    function preparaNuovo() { 
+    function tornaAllaLista() {
+    if (modoModificaCliente && provenienzaDettaglio) {
+        // Se venivo dal dettaglio, ci ritorno
+        apriCliente(clienteAttivoIdx);
+    } else {
+        // In tutti gli altri casi (Nuovo o Modifica dalla Home), torno alla lista
+        clienteAttivoIdx = null;
+        switchView('lista-clienti');
+    }
+
+    // RESET DELLE VARIABILI PER LA PROSSIMA AZIONE
+    modoModificaCliente = false;
+    provenienzaDettaglio = false; 
+}
+    
+	
+	
+	function preparaNuovo() { 
     modoModificaCliente = false; 
+	provenienzaDettaglio = false; // RESET status di dove modifichiamo il cliente se da home o da dettaglio cliente 
     document.querySelectorAll('#form-cliente input').forEach(i => i.value = ''); 
     switchView('form-cliente'); 
     
@@ -978,6 +1002,7 @@ function toggleModalitaElimina() {
 }
     function preparaModifica() { 
     modoModificaCliente = true; 
+	provenienzaDettaglio = true; // <--- SETTIAMO CHE VENIAMO DAL DETTAGLIO CLIENTE
     const c = clienti[clienteAttivoIdx]; 
     
     document.getElementById('titoloLavoro').value = c.titolo || ""; 
